@@ -1,0 +1,30 @@
+# No Backup files in git
+*~
+[#]*[#]
+.\#*
+*.swp
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+
+# CMake
+# only build dirs/symlinks are ignored
+/build*
+
+# QtCreator
+CMakeLists.txt.user
+
+# Doxygen documentation
+# use "make doc" to generate it
+/doc/

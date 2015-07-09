@@ -1,0 +1,6 @@
+This project will fit the spin polarisabilities using APLCON - a constrained least square fitter by Volker Blobel. As APLCON is written in Fortran, a c++ wrapper was written by Andreas Neiser, known as APLCON++. The code is available here:
+
+https://github.com/A2-Collaboration-dev/APLCON
+
+APLCON++, and ROOT cern are required. 
+
