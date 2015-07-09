@@ -12,7 +12,7 @@ private:
     unsigned int n_calls = 0;
 
     // The command to call
-    std::string command = "sh runComptonEFT";
+    std::string command = "sh ComptonEFT/runComptonEFT";
 
 public:
     class Result {
