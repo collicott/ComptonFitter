@@ -28,3 +28,6 @@ CMakeLists.txt.user
 # Doxygen documentation
 # use "make doc" to generate it
 /doc/
+
+#ignore theory files
+ComptonEFT
