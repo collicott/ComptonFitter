@@ -10,16 +10,16 @@ find_package(ROOT "5.30" REQUIRED)
 
 include_directories(${APLCON_INCLUDE_DIR})
 
-set(SRC_LIST CEFTwrapper.cpp DataHandling.cpp)
+set(SRC_LIST src/CEFTwrapper.cpp src/DataHandling.cpp)
 
-add_executable(phil_fit ${SRC_LIST} phil_fit.cpp)
+add_executable(phil_fit ${SRC_LIST} src/phil_fit.cpp)
 
     target_link_libraries(phil_fit
     	${APLCON_LIBRARIES}
     	${ROOT_LIBRARIES}
     )
 
-add_executable(SP_fit ${SRC_LIST} SP_fit.cpp)
+add_executable(SP_fit ${SRC_LIST} src/SP_fit.cpp)
 
     target_link_libraries(SP_fit
     	${APLCON_LIBRARIES}
