@@ -4,3 +4,14 @@ https://github.com/A2-Collaboration-dev/APLCON
 
 APLCON++, and ROOT cern are required. 
 
+
+Setting up Pascalutsa software
+------------------------------------
+For privacy reasons, the compiled versions of Vladimir Pascalutsa's EFT code have *not* been included here. Please obtain these from Pascalutsa directly! You should get two specific files 
+(1) runComptonEFT -- a shell script for setting up the program
+(2) ComptonEFT    -- compiled executable
+
+- Create a directory, within "ComptonFitter" called ComptonEFT
+- Move these two files into the directory
+- Make sure the files are executable
+- good to go
