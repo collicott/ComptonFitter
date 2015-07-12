@@ -53,8 +53,6 @@ Fitter::Result Fitter::Fit(const double th, const double E, const double a, cons
     return std::move(Result(tmp));
 }
 
-
-
 double Fitter::Result::GetSigma2x() const
 {
     return read_double("xSigma2x_Adistribution.output");
@@ -67,5 +65,10 @@ double Fitter::Result::GetSigma2z() const
 
 double Fitter::Result::GetSigma3() const
 {
-    return read_double("xBa_Adistribution.output");
+    return (read_double("xBa_Adistribution.output"))/100.0;
+}
+
+double Fitter::Result::GetCross() const
+{
+    return read_double("xcs_Adistribution.output");
 }

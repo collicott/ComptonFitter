@@ -34,6 +34,8 @@ public:
         double GetSigma2x() const;
         double GetSigma2z() const;
         double GetSigma3() const;
+        double GetCross() const;
+
     };
 
     class result_file_error: public std::exception {
