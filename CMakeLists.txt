@@ -10,6 +10,13 @@ find_package(ROOT "5.30" REQUIRED)
 
 include_directories(${APLCON_INCLUDE_DIR})
 
+# since all subprojects need ROOT, set that up here
+include_directories(${ROOT_INCLUDES})
+link_directories(${ROOT_LIBRARY_DIR})
+
+include_directories(inc)
+set(ROOT_LIBRARIES "${ROOT_LIBRARIES} -lEG")
+
 set(SRC_LIST src/CEFTwrapper.cpp src/DataHandling.cpp)
 
 add_executable(phil_fit ${SRC_LIST} src/phil_fit.cpp)
