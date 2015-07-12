@@ -2,6 +2,7 @@
 #define DATAHANDLING_H
 
 #include "CEFTwrapper.h"
+#include "TLorentzVector.h"
 
 #include <string>
 #include <fstream>
@@ -43,6 +44,12 @@ private:
 
     std::vector<data> datalist;
 
+    // CM conversion stuff
+    TLorentzVector beam;
+    TLorentzVector target;
+    TLorentzVector particle;
+
+
 public:
 
     class result_file_error: public std::exception {
@@ -60,7 +67,7 @@ public:
     const std::vector<data> GetDataList() {return datalist;}
     void process_file_list(const std::string& filename);
     void process_file(const std::string& filename);
- //   double Convert_LAB_to_CM(double th_lab);
+    double Convert_CM_to_LAB(double th_lab, double E_beam);
 };
 
 #endif

@@ -1,5 +1,6 @@
 #include "DataHandling.h"
 #include "CEFTwrapper.h"
+#include "TLorentzVector.h"
 
 #include <iostream>
 #include <string>
@@ -44,15 +45,25 @@ void DataHandling::process_file(const string &filename)
     string frame;
     while(input >> theta >> energy >> observable >> error >> observable_type >> frame)
     {
-        cout << theta <<" "<< energy <<" "<<  observable <<" "<<  error <<" "<<  observable_type << " " << frame << endl;
+        cout << theta <<" "<< energy <<" "<<  observable <<" "<<  error <<" "<<  observable_type << " " << frame;
 
         // Use toupper to avoid case sensitivity
         std::transform(observable_type.begin(),observable_type.end(),observable_type.begin(), ::toupper);
         std::transform(frame.begin(),frame.end(),frame.begin(), ::toupper);
 
-        // if LAB frame, convert to CM for Pascalutsa
-   //     if (frame == "LAB")
-     //       theta = Convert_LAB_to_CM(theta);
+        // if CM frame data point, convert to LAB
+        if (frame == "CM")
+        {
+            theta = Convert_CM_to_LAB(theta,energy);
+            cout << " -- converting to LAB frame-- "
+                 << theta <<" "
+                 << energy <<" "
+                 <<  observable <<" "
+                 <<  error <<" "
+                 <<  observable_type << " "
+                  << "LAB" << endl;
+        }
+        else cout << endl;
 
         if (observable_type == "SIGMA_3")
             datalist.push_back ({theta, energy, observable, error, Sigma_3});
@@ -68,24 +79,19 @@ void DataHandling::process_file(const string &filename)
     input.close();
 }
 
-/*
-vector<data> DataHandling::GetDataList()
+double DataHandling::Convert_CM_to_LAB(double th_lab, double E_beam)
 {
-    vector<data> datalist;
+    beam   = TLorentzVector(0.0, 0.0 , E_beam, E_beam );
+    target = TLorentzVector(0.0, 0.0 , 0.0, 938.27 );
 
-    datalist.push_back ({75, 297, 0.2697, 0.0388, Sigma_3});
-    datalist.push_back ({85, 297, 0.2551, 0.0274, Sigma_3});
-    datalist.push_back ({95, 297, 0.2228, 0.267, Sigma_3});
-    datalist.push_back ({107.5, 297, 0.1597, 0.0316, Sigma_3});
+    particle = TLorentzVector(0.0, 0.0, 1.0, 1.0);
+    particle.SetTheta(th_lab*TMath::DegToRad());
 
-    cout << datalist[0].energy << endl;
+    TVector3 BoostVect;
+    //use -1.0 for LAB to CM
+    BoostVect = 1.0 * (beam + target).BoostVector();
+    particle.Boost(BoostVect);
 
-    return datalist;
+    return particle.Theta()*TMath::RadToDeg();
 }
-*/
 
-/*double DataHandling::Convert_LAB_to_CM(double th_lab)
-{
-    return th_lab;
-}
-*/
