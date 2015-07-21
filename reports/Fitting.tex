@@ -1,0 +1,277 @@
+\documentclass[]{article}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+	language=Java,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3
+}
+
+%opening
+\title{Proton Polarisability Fitting: CS-APLCON\texttt{++} }
+\author{Cristina Collicott}
+
+\begin{document}
+	
+\maketitle
+
+\begin{abstract}
+	A robust fitting routine, known as CS-APLCON\texttt{++}, was designed to extract the proton polarisabilities (both spin and scalar) from Compton scattering data. This fitter is based upon APLCON - a constrained least square fitter by Volker Blobel. As APLCON is written in Fortran, a c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. B$\chi$PT, a covariant baryon chiral perturbation calculation from Vladimir Pascalutsa, was used as a theoretical framework. A discussion of different fit results will be presented here. \vspace{8mm}
+\end{abstract}
+
+\section{Fitting algorithm: CS-APLCON\texttt{++}}
+
+A new fitting algorithm, known as CS-APLCON\texttt{++}, was designed based upon the previous work by Rory/Phil/Ali. A primary goal was to design a more robust (automated) program to extract the proton polarisabilities from Compton scattering (CS) data. Previous extractions of the spin polarisabilities (SPs) as been centered upon the Pasquini dispersion relation framework. However, the time required to produce data points from this code is roughly 30-60 seconds per data point. Comparatively, the Pascalutsa code is much faster (well below 1 second per point). For this reason, the Pascalutsa code was adopted as a first test.
+
+\subsection{Working with APLCON\texttt{++}}
+
+APLCON\texttt{++} is a constrained least square fitter by Volker Blobel written in Fortran. A c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. A new instance of APLCON\texttt{++} can be called in the following manner: \\
+
+\begin{lstlisting}
+// Set up APLCON
+APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
+settings.MaxIterations = 1000;
+APLCON aplcon("Polarisabilities", settings);
+\end{lstlisting}
+
+\newpage
+\noindent APLCON works primarily with measured and unmeasured variables. 
+
+\begin{lstlisting}
+// Set initial values
+    params fitparam(12.0, 1.9, -4.3, 2.9, -0.02, 2.2);
+    constraints ab_sum(13.8, 0.4);
+    constraints ab_diff(7.6, 0.9);
+    constraints g_0(-1.01, 0.18);
+    constraints g_pi(8.0, 1.8);
+
+// Add fit parameters as unmeasured variables
+    aplcon.AddUnmeasuredVariable("alpha",fitparam.alpha);
+    aplcon.AddUnmeasuredVariable("beta", fitparam.beta);
+    aplcon.AddUnmeasuredVariable("E1E1",fitparam.E1E1);
+    aplcon.AddUnmeasuredVariable("M1M1",fitparam.M1M1);
+    aplcon.AddUnmeasuredVariable("E1M2",fitparam.E1M2);
+    aplcon.AddUnmeasuredVariable("M1E2",fitparam.M1E2);
+    
+// Add measured constraints
+    aplcon.AddMeasuredVariable("ab_sum",ab_sum.value, ab_sum.error);
+    aplcon.AddMeasuredVariable("ab_diff",ab_diff.value, ab_diff.error);
+    aplcon.AddMeasuredVariable("g_0",g_0.value, g_0.error);
+    aplcon.AddMeasuredVariable("g_pi",g_pi.value, g_pi.error);
+\end{lstlisting}
+
+\noindent \\Finally, constraint functions can be written which range from relatively simple, to very complex. An example constraint, for the Baldin sum rule, could be written in the following manner: \\
+
+\begin{lstlisting}
+// Set up constraint lamda functions
+    auto sum_constraint  = [] (double a, double b, double sum)  
+    {
+	    // Baldin sum rule says "a + b = sum"
+	    // return 0 = sum - a - b to be minimized
+	    return sum - a - b;  
+    };
+
+// Apply the constraints
+    aplcon.AddConstraint("Baldin", {"alpha", "beta", "alpha_beta_sum"},
+								    sum_constraint);
+\end{lstlisting}
+
+\noindent \\ Once all variables have been included, and all constraints have been specified, APLCON will try to minimize each constraint: \\
+
+\begin{lstlisting}
+// Call fit routine
+    const APLCON::Result_t& ra = aplcon.DoFit();
+\end{lstlisting}
+
+\subsection{Applied Constraints}
+
+The following section will outline the constraints applied during the fitting routine. These constraints fall under two main categories,
+
+\begin{enumerate}
+	\item Data points -- each data point is used as a constraint.
+	\item Measured polarisabilities -- the sum and difference of the scaler polarisabilities ($\alpha+\beta$ and $\alpha-\beta$) , and the forward and backward spin polarisabilities ($\gamma_0$ and $\gamma_{\pi}$), are constrained by the experimental values.
+\end{enumerate}
+
+\vspace{3mm}
+
+\noindent \textbf{Data points} \\
+
+Data sets can be added to the fitting routine with a text file. Each data set should sit in a file, and a list of files is passed to the fitter. Each new data point is added to the file with the following syntax:
+
+\begin{center}
+	90 \quad 288 \quad -0.285 \quad 0.131 \quad Sigma$\_$2x \quad lab\\
+	\hspace{1mm}65 \quad 310 \quad -0.212 \quad 0.041 \quad Sigma$\_$3 \quad \hspace{2mm}CM\\
+\end{center}
+
+\noindent where the theta, energy, observable, error, observable type, and frame are specified. The fitter will automatically convert between the lab and CM frame, and it is currently capable of using $\Sigma_{2x}$, $\Sigma_{2z}$, $\Sigma_{3}$, and differential cross sections. Each data point is added as a constraint using a lambda function with the following syntax:\\
+
+\begin{lstlisting}
+        // setup a lambda function which returns 0
+        auto equality_constraint = [] (double experiment, double alpha, 
+        double beta, double E1E1, double M1M1, double E1M2, double M1E2) 
+        {
+	        // call to Pascalutsa code with current fit parameters
+	        auto theory = myfit.Fit(datapoint[i].theta, 
+										        datapoint[i].energy,
+										        alpha, beta, E1E1, M1M1, E1M2, M1E2);       
+        
+	        // return difference between theory and experiment to minimizer
+	        if (datapoint[i].data_type == Sigma_3)
+				return experiment - theory.GetSigma3();
+				
+	        else if (datapoint[i].data_type == Sigma_2x)
+				return experiment - theory.GetSigma2x();
+				
+	        else if (datapoint[i].data_type == Sigma_2z)
+				return experiment - theory.GetSigma2z();
+				
+	        else if (datapoint[i].data_type == Cross)
+				return experiment - theory.GetCross();
+        };
+\end{lstlisting}
+
+\noindent \textbf{Measured polarisabilities} \\
+
+The sum and difference of the scaler polarisabilities ($\alpha+\beta$ and $\alpha-\beta$) are added as a constraint using lambda functions with the following syntax: \\
+
+\begin{lstlisting}
+// Set up constraint lamda functions
+    auto sum_constraint  = [] (double a, double b, double sum)
+										    { return sum - a - b; };
+    auto diff_constraint = [] (double a, double b, double diff)
+										    { return diff - a + b; };
+    
+// Apply the constraints
+    aplcon.AddConstraint("Baldin", {"alpha", "beta", "ab_sum"},  
+									sum_constraint);
+    aplcon.AddConstraint("Diff",   {"alpha", "beta", "ab_diff"}, 
+								    diff_constraint);
+\end{lstlisting}
+
+\noindent \\Similarily, the forward and backward spin polarisabilities ($\gamma_0$ and $\gamma_{\pi}$) are added as a constraint using lambda functions with the following syntax: \\
+
+\begin{lstlisting}
+// Set up constraint lamda functions
+    auto g0_constraint   = [] 
+	    (double E1E1, double M1M1, double E1M2, double M1E2, double g0 )
+		    { return g0 + E1E1 + M1M1 + E1M2 + M1E2;};
+		    
+    auto gpi_constraint  = [] 
+	    (double E1E1, double M1M1, double E1M2, double M1E2, double gpi )
+		    { return gpi + E1E1 - M1M1 + E1M2 - M1E2; };
+    
+// Apply the constraints
+    aplcon.AddConstraint("gamma0", 
+								    {"E1E1", "M1M1", "E1M2", "M1E2", "gamma_0"},  
+								    g0_constraint);
+    aplcon.AddConstraint("gammapi",
+								    {"E1E1", "M1M1", "E1M2", "M1E2", "gamma_pi"}, 
+								    gpi_constraint);
+
+\end{lstlisting}
+
+%\noindent \\The constraints used for this fitting were
+%\begin{eqnarray}
+%\alpha + \beta &=& \hspace{4mm}13.8 \pm 0.4 \\
+%\alpha - \beta &=& \hspace{5.5mm} 7.6 \pm 0.9 \\
+%\gamma_0 &=&  \hspace{1mm}-1.01 \pm 0.18 \\
+%\gamma_\pi &=& \hspace{5.5mm}8.0 \pm 1.8
+%\end{eqnarray}
+
+\section{Data sets}
+Three main data sets will be used, (1) $\Sigma_{2x}$ from Martel, (2) $\Sigma_{3}$  from Collicott, and (3) $\Sigma_{3}$  from LEGS.
+
+\section{Theory predictions}
+
+\begin{table}[h!]
+	\centering % used for centering table
+	\begin{tabular}{|c|c|c|c|c|c|c|c|c|} % centered columns (4 columns)
+		\hline %inserts double horizontal lines
+		& \textbf{HDPV} & DPV &$\mathcal{O}(p^{4})_a$ & $\mathcal{O}(p^{4})_b$  & $\mathcal{O}(\epsilon^{3})$ & HB$\chi$PT & \textbf{B$\chi$PT} \\ [0.5ex] % inserts table heading
+		\hline\hline % inserts double horizontal line
+		$\bar{\gamma}_{E1E1}$ & \textbf{-4.3}  & -3.8 & -5.4 & 1.3 & -1.9 & -1.1 $\pm$ 1.8 & \textbf{-3.3} \\ 
+		$\bar{\gamma}_{M1M1}$ & \textbf{2.9}   & 2.9  & 1.4  & 3.3 & 0.4* & 2.2 $\pm$ 1.2 &\textbf{3.0} \\
+		$\bar{\gamma}_{E1M2}$ & \textbf{-0.02} & 0.5  & 1.0  & 0.2 & 0.7 & -0.4 $\pm$ 0.4 & \textbf{0.2} \\
+		$\bar{\gamma}_{M1E2}$ &\textbf{ 2.2 }  & 1.6  & 1.0  & 1.8 & 1.9 & 1.9 $\pm$ 0.4 & \textbf{1.1} \\
+		\hline
+		$\gamma_{0}$ 		  & \textbf{-0.8} &  -1.1 & 1.9  & -3.9 & -1.1  & -2.6 & \textbf{-1.0} \\
+		$\gamma_{\pi}$ 		  &\textbf{9.4}  &   7.8 & 6.8  & 6.1  & 3.5  & 5.6 & \textbf{7.2} \\
+		\hline %inserts single line
+	\end{tabular}
+\end{table}
+
+\noindent Theoretical predictions of the proton spin polarisabilties are shown for various theoretical frameworks. The first and last column, HDPV and B$\chi$PT, are the Pasquini and Pascalutsa nominal predictions respectively. All polarisabilities are given in units of 10$^{-4}$ fm$^{4}$ with the $\gamma_{\pi}^{\pi^{0}\text{-pole}}$ removed.
+
+\section{Previous fits (Can anybody fill in the ?'s)}
+
+\begin{table}[h!]
+	\centering % used for centering table
+	\begin{tabular}{|c|c|c|c|} % centered columns (4 columns)
+		\hline %inserts double horizontal lines
+		& LEGS + Martel & Collicott + Martel & LEGS + Martel\\
+		& [$10^{-4}$ fm$^{4}$] & [$10^{-4}$ fm$^{4}$] & [$10^{-4}$ fm$^{4}$]\\
+		\hline\hline
+		$\bar{\gamma}_{E1E1}$ & -3.5 $\pm$ 1.2 				& -5.0 $\pm$ 1.5 \hspace{1mm} & -2.6 $\pm$ 0.8 \\
+		$\bar{\gamma}_{M1M1}$ & \hspace{1mm}3.16 $\pm$ 0.85 	& 3.13 $\pm$ 0.88 & 2.7 $\pm$ 0.5 \\
+		$\bar{\gamma}_{E1M2}$ & -0.7 $\pm$ 1.2 				& 1.7 $\pm$ 1.7 & ?\\
+		$\bar{\gamma}_{M1E2}$ & \hspace{1mm}1.99 $\pm$ 0.29 	& 1.26 $\pm$ 0.43 & ?\\
+		\hline
+		$\gamma_{0}$ 	& -1.03 $\pm$ 0.18 				& -1.00 $\pm$ 0.18\hspace{1.5mm} & ?\\
+		$\gamma_{\pi}$ 	& \hspace{1mm}9.3 $\pm$ 1.6 	& 7.8 $\pm$ 1.8 & ?\\%[0.5ex] 
+		$\bar{\alpha} + \bar{\beta}$ & 14.0 $\pm$ 0.4 	& 13.8 $\pm$ 0.4\hspace{1mm} & ?\\
+		$\bar{\alpha} - \bar{\beta}$ & \hspace{1mm}7.4 $\pm$ 0.9 	& 6.6 $\pm$ 1.7 & ?\\[0.5ex]
+		\hline % inserts double horizontal line
+		$\chi^{2}$/dof & 1.05 & 1.25 & ?\\[0.5ex]
+		\hline
+		Theory & Pasquini & Pasquini & Pascalutsa\\[0.5ex]
+		Fit method & (By Hand/Excel)? & (By Hand/Excel)? & (By Hand/Excel)? \\[0.5ex]
+		\hline
+	\end{tabular}
+\end{table}
+%
+
+\section{Fits with CS-APLCON\texttt{++}}
+
+The following section will outline numerous fits which were performed with the new fitting routine, CS-APLCON\texttt{++}. In section \ref{Section:PhilTest}, a simple test to replicate the results of Phil's thesis will be shown. In section \ref{Section:LEGSTest}
+
+\subsection{Test 1: E1E1 with Martel $\Sigma_{2x}$}\label{Section:PhilTest}
+
+Within the $\Delta$ region, $\Sigma_{2x}$ shows a strong sensitivity to $\bar{\gamma}_{E1E1}$ (while being essentially insensitive to $\bar{\gamma}_{M1M1}$). Because of this, a simple extraction of $\bar{\gamma}_{E1E1}$ is possible using only $\Sigma_{2x}$ data. This test was done in Phil's thesis (with Pasquini's HDPV theory code) and determined a value of $\bar{\gamma}_{E1E1}$ to be,
+%
+\begin{equation}
+\bar{\gamma}_{E1E1} = -4.3 \pm 1.5 
+\end{equation}
+%
+where $\alpha$ and $\beta$ were the old PDG values (12.1 and 1.6 respectively), and $\bar{\gamma}_{M1M1}$/$\bar{\gamma}_{E1M2}$/$\bar{\gamma}_{M1E2}$ were fixed to the HDPV nominal values (given in Section 3). This test was replicated with CS-APLCON\texttt{++} (using Pascalutsa's theory code). 
+%
+\begin{equation}
+\bar{\gamma}_{E1E1} = -3.7 \pm 1.3 
+\end{equation}
+%
+Repeating this test, fixing $\bar{\gamma}_{M1M1}$/$\bar{\gamma}_{E1M2}$/$\bar{\gamma}_{M1E2}$ to the Pascalutsa's nominal values (rather than Pasquini), gives the same result. Similarily, using the new PDG values for $\alpha$ and $\beta$ also produces the same result. 
+
+\subsection{Test 2: Spin Pols with LEGS $\Sigma_{3}$ and Martel $\Sigma_{2x}$}\label{Section:LEGSTest}
+
+
+
+\subsection{Test 3: Spin Pols with Collicott $\Sigma_{3}$ and Martel $\Sigma_{2x}$}\label{Section:CollicottTest}
+\subsection{Test 4: Scaler Pols with Sokoyan $\Sigma_{3}$}\label{Section:AlphaBetaTest}
+	
+\end{document}
