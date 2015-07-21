@@ -31,3 +31,10 @@ CMakeLists.txt.user
 
 #ignore theory files
 ComptonEFT
+
+#latex extras
+*.aux
+*.bbl 
+*.blg
+*.log
+*.pdf
