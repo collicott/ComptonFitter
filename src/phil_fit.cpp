@@ -2,6 +2,8 @@
 #include <APLCON.hpp>
 #include "CEFTwrapper.h"
 #include "DataHandling.h"
+#include "TFile.h"
+#include "TNtuple.h"
 
 using namespace std;
 
@@ -42,6 +44,12 @@ struct constraints {
 // Test phils fit - datapoints not fixed
 int main(int argc, char *argv[])
 {
+    // Set up some ROOT storage
+    TFile *f = new TFile("phil_fit.root","RECREATE");
+    TNtuple *ntuple = new TNtuple("phil_fit",
+                                  "phil_fit",
+                                  "alpha:beta:E1E1:M1M1:E1M2:M1E2");
+
     // Set up APLCON
     APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
     settings.MaxIterations = 1000;
@@ -53,11 +61,14 @@ int main(int argc, char *argv[])
     Fitter myfit;
 
     // Set initial values
-    params fitparam(12.0, 1.9, 4.5, 3.0, -0.8, 2.0);
-    constraints alpha_beta_sum(13.8, 1.8);
-    constraints alpha_beta_diff(10, 1.8);
-    constraints gamma_0(1.01, 0.08);
-    constraints gamma_pi(8.0, 1.8);
+
+    // old alpha-beta
+//      params fitparam(12.1, 1.6, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
+//    params fitparam(12.1, 1.6, -4.3, 2.9, -0.02, 2.2);   // (nominal HDPV) -3.7
+
+    // new alpha-beta
+//    params fitparam(11.2, 2.5, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
+    params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);    // (nominal HDPV)   -3.6
 
     // Add params as unmeasured variables
     aplcon.AddUnmeasuredVariable("E1E1",fitparam.E1E1);
@@ -89,7 +100,7 @@ int main(int argc, char *argv[])
         pointname << "datapoint" << i;
 
         // setup a lambda function which returns 0
-        auto equality_constraint = [&myfit,&fitparam,&datapoint,i]
+        auto equality_constraint = [&myfit,&fitparam,&datapoint,i,&ntuple]
                 (double experiment,
                 double E1E1)
         {
@@ -101,6 +112,15 @@ int main(int argc, char *argv[])
                                     fitparam.M1M1,
                                     fitparam.E1M2,
                                     fitparam.M1E2);
+
+            ntuple->Fill(fitparam.alpha,
+                         fitparam.beta,
+                         E1E1,
+                         fitparam.M1M1,
+                         fitparam.E1M2,
+                         fitparam.M1E2);
+
+            cout << i << E1E1 << endl;
 
             return experiment - theory.GetSigma2x();
         };
@@ -116,6 +136,8 @@ int main(int argc, char *argv[])
     cout << ra << endl;
 
     cout << "Calls to Executable: " << myfit.GetNCalls() << endl;
+
+    f->Write();
 
     return 0;
 }
