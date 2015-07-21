@@ -33,3 +33,9 @@ add_executable(SP_fit ${SRC_LIST} src/SP_fit.cpp)
     	${ROOT_LIBRARIES}
     )
 
+add_executable(AB_fit ${SRC_LIST} src/AB_fit.cpp)
+
+    target_link_libraries(AB_fit
+    	${APLCON_LIBRARIES}
+    	${ROOT_LIBRARIES}
+    )
