@@ -24,33 +24,43 @@ double Fitter::Result::read_double(const string &filename) const
 }
 
 Fitter::Result::~Result() {
-    if(!folder.empty()) {
+  //  if(!folder.empty()) {
 //        cout << "removing " + folder << endl;
-        system(string("rm -rf "+folder).c_str());
-    }
+   //     system(string("rm -rf "+folder).c_str());
+  //  }
 }
 
 Fitter::Result Fitter::Fit(const double th, const double E, const double a, const double b, const double E1E1, const double M1M1, const double E1M2, const double M1E2) {
 
     ++n_calls;
 
-    char folder[256] = "/tmp/comptonfit_XXXXXX";
+    // Make folder
+    string folder = "tmp/Pascalutsa_" + to_string(th) + "_" + to_string(E) + "_" + to_string(a) + "_" + to_string(b) + "_" + to_string(E1E1) + "_" + to_string(M1M1) + "_" + to_string(E1M2) + "_" + to_string(M1E2);
 
-    string tmp = mkdtemp(folder);
+    // Check if folder exists already
+    struct stat sb;
+    if (stat(folder.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))
+    {
+        n_folders++;
+       // folder exists, return result without recalculating
+       return std::move(Result(folder));
+    }
+    // else continue, and create folder, run command.. jadda jadda
+    else
+        system(string("mkdir "+folder).c_str());
 
-    if(tmp.empty())
-        throw std::runtime_error("Can't create fitter output directory");
+    // Create command, pass parameters and folder name
 
     string cmd = command + " "
-            + to_string(th) + " " + to_string(E) + " " + to_string(a) + " " + to_string(b) + " " + to_string(E1E1) + " " + to_string(M1M1) + " " + to_string(E1M2) + " " + to_string(M1E2) + " " + tmp;
+            + to_string(th) + " " + to_string(E) + " " + to_string(a) + " " + to_string(b) + " " + to_string(E1E1) + " " + to_string(M1M1) + " " + to_string(E1M2) + " " + to_string(M1E2) + " " + folder;
 
-  //  cout << "Running " << cmd << endl;
+    // Run command
     int r = system(cmd.c_str());
 
-    if(r!=0)
-        throw fit_command_error(r);
+    // Throw error
+    if(r!=0) throw fit_command_error(r);
 
-    return std::move(Result(tmp));
+    return std::move(Result(folder));
 }
 
 double Fitter::Result::GetSigma2x() const

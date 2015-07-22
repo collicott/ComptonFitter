@@ -5,11 +5,13 @@
 #include <fstream>
 #include <stdlib.h>
 #include <exception>
+#include <sys/stat.h>
 
 class Fitter {
 private:
 
     unsigned int n_calls = 0;
+    unsigned int n_folders = 0;
 
     // The command to call
     std::string command = "sh ComptonEFT/runComptonEFT";
@@ -63,7 +65,7 @@ public:
     Result Fit(const double th, const double E, const double a, const double b, const double E1E1, const double M1M1, const double E1M2, const double M1E2);
 
     unsigned int GetNCalls() const { return n_calls; }
-
+    unsigned int GetNFolders() const { return n_folders; }
 };
 
 #endif
