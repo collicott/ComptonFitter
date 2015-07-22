@@ -55,24 +55,20 @@ void DataHandling::process_file(const string &filename)
         if (frame == "CM")
         {
             theta = Convert_CM_to_LAB(theta,energy);
-            cout << " -- converting to LAB frame-- "
-                 << theta <<" "
-                 << energy <<" "
-                 <<  observable <<" "
-                 <<  error <<" "
-                 <<  observable_type << " "
-                  << "LAB" << endl;
         }
         else cout << endl;
 
         if (observable_type == "SIGMA_3")
-            datalist.push_back ({theta, energy, observable, error, Sigma_3});
+            datalist.push_back ({theta, energy, observable, error, "Sigma_3"});
 
         else if (observable_type == "SIGMA_2X")
-            datalist.push_back ({theta, energy, observable, error, Sigma_2x});
+            datalist.push_back ({theta, energy, observable, error, "Sigma_2x"});
 
         else if (observable_type == "SIGMA_2z")
-            datalist.push_back ({theta, energy, observable, error, Sigma_2z});
+            datalist.push_back ({theta, energy, observable, error, "Sigma_2z"});
+
+        else if (observable_type == "CROSS")
+            datalist.push_back ({theta, energy, observable, error, "Cross"});
 
         else cout << "Warning: skipping *unknown* data type " << observable_type << endl;
     }

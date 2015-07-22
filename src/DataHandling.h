@@ -15,28 +15,20 @@ struct data {
     double energy;
     double observable;
     double error;
-    int    data_type;
+    std::string data_type;
 
 
     data(double _theta,
          double _energy,
          double _observable,
          double _error,
-         int    _data_type) :
+         std::string _data_type) :
         theta(_theta),
         energy(_energy),
         observable(_observable),
         error(_error),
         data_type(_data_type)
     {}
-};
-
-enum
-{
-    Sigma_2x = 1,
-    Sigma_2z = 2,
-    Sigma_3  = 3,
-    Cross    = 4,
 };
 
 class DataHandling {

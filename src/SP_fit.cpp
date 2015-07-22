@@ -4,6 +4,7 @@
 #include "DataHandling.h"
 #include "TFile.h"
 #include "TNtuple.h"
+#include <ctime>
 
 using namespace std;
 
@@ -43,6 +44,9 @@ struct constraints {
 
 int main(int argc, char *argv[])
 {
+    // Set up some time
+    clock_t begin = clock();
+
     // Set up some ROOT storage
     TFile *f = new TFile("SP_fit.root","RECREATE");
     TNtuple *ntuple = new TNtuple("SP_fit",
@@ -140,7 +144,8 @@ int main(int argc, char *argv[])
                                     E1E1,
                                     M1M1,
                                     E1M2,
-                                    M1E2);
+                                    M1E2,
+                                    datapoint[i].data_type);
 
             ntuple->Fill(call,
                          alpha,
@@ -151,21 +156,8 @@ int main(int argc, char *argv[])
                          M1E2);
             call++;
 
+            return experiment - theory;
 
-            if (datapoint[i].data_type == Sigma_3)
-                return experiment - theory.GetSigma3();
-
-            else if (datapoint[i].data_type == Sigma_2x)
-                return experiment - theory.GetSigma2x();
-
-            else if (datapoint[i].data_type == Sigma_2z)
-                return experiment - theory.GetSigma2z();
-
-            else if (datapoint[i].data_type == Cross)
-                return experiment - theory.GetCross();
-
-            else cout << "ERROOOROROROROROROR" << endl;
-            return 1000000.0;
         };
 
         aplcon.AddConstraint(
@@ -187,6 +179,13 @@ int main(int argc, char *argv[])
     cout << "Calls to Executable: " << myfit.GetNCalls() << endl;
 
     f->Write();
+
+    // output time performance
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+    cout << "*************************" << endl;
+    cout << "Fit completed in " << elapsed_secs << " seconds." << endl;
 
     return 0;
 }

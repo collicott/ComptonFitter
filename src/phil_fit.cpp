@@ -4,6 +4,7 @@
 #include "DataHandling.h"
 #include "TFile.h"
 #include "TNtuple.h"
+#include <ctime>
 
 using namespace std;
 
@@ -44,11 +45,16 @@ struct constraints {
 // Test phils fit - datapoints not fixed
 int main(int argc, char *argv[])
 {
+    // Set up some time
+    clock_t begin = clock();
+
     // Set up some ROOT storage
     TFile *f = new TFile("phil_fit.root","RECREATE");
     TNtuple *ntuple = new TNtuple("phil_fit",
                                   "phil_fit",
-                                  "alpha:beta:E1E1:M1M1:E1M2:M1E2");
+                                  "call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
+
+    int call = 0;
 
     // Set up APLCON
     APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
@@ -100,9 +106,9 @@ int main(int argc, char *argv[])
         pointname << "datapoint" << i;
 
         // setup a lambda function which returns 0
-        auto equality_constraint = [&myfit,&fitparam,&datapoint,i,&ntuple]
+        auto equality_constraint = [&myfit,&fitparam,&datapoint,i,&ntuple,&call]
                 (double experiment,
-                double E1E1)
+                 double E1E1)
         {
             auto theory = myfit.Fit(datapoint[i].theta,
                                     datapoint[i].energy,
@@ -111,18 +117,19 @@ int main(int argc, char *argv[])
                                     E1E1,
                                     fitparam.M1M1,
                                     fitparam.E1M2,
-                                    fitparam.M1E2);
+                                    fitparam.M1E2,
+                                    datapoint[i].data_type);
 
-            ntuple->Fill(fitparam.alpha,
+            ntuple->Fill(call,
+                         fitparam.alpha,
                          fitparam.beta,
                          E1E1,
                          fitparam.M1M1,
                          fitparam.E1M2,
                          fitparam.M1E2);
+            call++;
 
-            cout << i << E1E1 << endl;
-
-            return experiment - theory.GetSigma2x();
+            return experiment - theory;
         };
 
         aplcon.AddConstraint(
@@ -136,8 +143,16 @@ int main(int argc, char *argv[])
     cout << ra << endl;
 
     cout << "Calls to Executable: " << myfit.GetNCalls() << endl;
+    cout << "Number of re-used folders: " << myfit.GetNFolders() << endl;
 
     f->Write();
+
+    // output time performance
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+    cout << "*************************" << endl;
+    cout << "Fit completed in " << elapsed_secs << " seconds." << endl;
 
     return 0;
 }
