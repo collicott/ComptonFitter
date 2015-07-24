@@ -65,7 +65,12 @@ int main(int argc, char *argv[])
     Fitter myfit;
 
     // Set initial values
-    params fitparam(12.0, 2, 0., 0., 0., 0.);
+//  params fitparam(12.1, 1.6, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
+//  params fitparam(12.1, 1.6, -4.3, 2.9, -0.02, 2.2);   // (nominal HDPV) -3.7
+
+    // new alpha-beta
+//    params fitparam(11.2, 2.5, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
+    params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);    // (nominal HDPV)   -3.6
     constraints alpha_beta_sum(13.8, 0.4);
     constraints alpha_beta_diff(7.6, 1.7);
     constraints gamma_0(-1.01, 0.08);
