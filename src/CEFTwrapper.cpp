@@ -5,7 +5,7 @@
 
 using namespace std;
 
-double Fitter::read_double(const string &filename) const
+double CEFTwrapper::read_double(const string &filename) const
 {
     const string absolute_filename(folder+"/"+filename);
 
@@ -22,10 +22,10 @@ double Fitter::read_double(const string &filename) const
     input.close();
     return value;
 }
-//tter::~Fitter() {
+//tter::~CEFTwrapper() {
 //
 
-double Fitter::Fit(const double th, const double E, const double a, const double b, const double E1E1, const double M1M1, const double E1M2, const double M1E2, std::string data_type)
+double CEFTwrapper::Fit(const double th, const double E, const double a, const double b, const double E1E1, const double M1M1, const double E1M2, const double M1E2, std::string data_type)
 {
     ++n_calls;
 
@@ -45,7 +45,7 @@ double Fitter::Fit(const double th, const double E, const double a, const double
 
         // Throw error if
         if(folder.empty())
-            throw std::runtime_error("Can't create fitter output directory");
+            throw std::runtime_error("Can't create CEFTwrapper output directory");
 
         // Create command, pass parameters and folder name
         string cmd = command + " "
@@ -77,22 +77,22 @@ double Fitter::Fit(const double th, const double E, const double a, const double
     return results_map[map];
 }
 
-double Fitter::GetSigma2x() const
+double CEFTwrapper::GetSigma2x() const
 {
     return read_double("xSigma2x_Adistribution.output");
 }
 
-double Fitter::GetSigma2z() const
+double CEFTwrapper::GetSigma2z() const
 {
     return read_double("xSigma2z_Adistribution.output");
 }
 
-double Fitter::GetSigma3() const
+double CEFTwrapper::GetSigma3() const
 {
     return (read_double("xBa_Adistribution.output"))/100.0;
 }
 
-double Fitter::GetCross() const
+double CEFTwrapper::GetCross() const
 {
     return read_double("xcs_Adistribution.output");
 }

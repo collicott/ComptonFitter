@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <map>
 
-class Fitter {
+class CEFTwrapper {
 private:
 
     unsigned int n_calls = 0;
@@ -24,7 +24,7 @@ private:
 
 public:
 
-    Fitter() {}
+    CEFTwrapper() {}
 
     double Fit(const double th, const double E, const double a, const double b, const double E1E1, const double M1M1, const double E1M2, const double M1E2, std::string data_type);
 
