@@ -1,10 +1,14 @@
 #include <iostream>
 #include <APLCON.hpp>
 #include "CEFTwrapper.h"
+#include "DISPwrapper.h"
 #include "DataHandling.h"
 #include "TFile.h"
 #include "TNtuple.h"
 #include <ctime>
+#include <string>
+#include <stdlib.h>
+#include <cmath>
 
 using namespace std;
 
@@ -31,6 +35,13 @@ struct params {
     {}
 };
 
+
+class SP_fit {
+public:
+    SP_fit() {}
+    APLCON::Result_t run(int argc, char *argv[], params fitparam, int instance, TFile *f, TNtuple *ntuple);
+};
+
 struct constraints {
     double value;
     double error;
@@ -44,16 +55,92 @@ struct constraints {
 
 int main(int argc, char *argv[])
 {
+    SP_fit fitter;
+    params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
+    double scaler_spread = 1.0;
+    double spin_spread = 4.0;
+
+    //Type of random number distribution
+    uniform_real_distribution<double> alpha(fitparam.alpha - scaler_spread, fitparam.alpha + scaler_spread);  //(min, max)
+    uniform_real_distribution<double> beta(fitparam.beta - scaler_spread, fitparam.beta + scaler_spread);  //(min, max)
+    uniform_real_distribution<double> E1E1(fitparam.E1E1 - spin_spread, fitparam.E1E1 + spin_spread);  //(min, max)
+    uniform_real_distribution<double> M1M1(fitparam.M1M1 - spin_spread, fitparam.M1M1 + spin_spread);  //(min, max)
+    uniform_real_distribution<double> E1M2(fitparam.E1M2 - spin_spread, fitparam.E1M2 + spin_spread);  //(min, max)
+    uniform_real_distribution<double> M1E2(fitparam.M1E2 - spin_spread, fitparam.M1E2 + spin_spread);  //(min, max)
+
+    mt19937 rng_alpha; rng_alpha.seed(random_device{}());
+    mt19937 rng_beta; rng_beta.seed(random_device{}());
+    mt19937 rng_E1E1; rng_E1E1.seed(random_device{}());
+    mt19937 rng_M1M1; rng_M1M1.seed(random_device{}());
+    mt19937 rng_E1M2; rng_E1M2.seed(random_device{}());
+    mt19937 rng_M1E2; rng_M1E2.seed(random_device{}());
+
+    // Set up some ROOT storage
+    string name;
+    if (argc > 3) name = argv[3];
+    else name = "SP_fit.root";
+    TFile *f = new TFile(name.c_str(),"RECREATE");
+    TNtuple *ntuple = new TNtuple("SP_fit",
+                                  "SP_fit",
+                                  "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
+
+    TNtuple *result = new TNtuple("result",
+                                  "result",
+                                  "instance:alpha_start:alpha:beta_start:beta:E1E1_start:E1E1:M1M1_start:M1M1:E1M2_start:E1M2:M1E2_start:M1E2");
+
+    // generate 10 random numbers.
+    for (int i=0; i<10; i++)
+    {
+        params random_fitparam(alpha(rng_alpha), beta(rng_beta), E1E1(rng_E1E1), M1M1(rng_M1M1), E1M2(rng_E1M2), M1E2(rng_M1E2));
+        APLCON::Result_t ra = fitter.run(argc,argv,random_fitparam,i,f,ntuple);
+
+        result->Fill(i,
+                     ra.Variables.at("alpha").Value.Before,
+                     ra.Variables.at("alpha").Value.After,
+                     ra.Variables.at("beta").Value.Before,
+                     ra.Variables.at("beta").Value.After,
+                     ra.Variables.at("E1E1").Value.Before,
+                     ra.Variables.at("E1E1").Value.After,
+                     ra.Variables.at("M1M1").Value.Before,
+                     ra.Variables.at("M1M1").Value.After,
+                     ra.Variables.at("E1M2").Value.Before,
+                     ra.Variables.at("E1M2").Value.After,
+                     ra.Variables.at("M1E2").Value.Before,
+                     ra.Variables.at("M1E2").Value.After
+                     );
+    }
+
+    f->Write();
+    return 0;
+
+//    int r = fitter.run(argc,argv,fitparam);
+}
+
+APLCON::Result_t SP_fit::run(int argc, char *argv[], params fitparam, int instance, TFile *f, TNtuple *ntuple)
+{
     // Set up some time
     clock_t begin = clock();
 
-    // Set up some ROOT storage
-    TFile *f = new TFile("SP_fit.root","RECREATE");
-    TNtuple *ntuple = new TNtuple("SP_fit",
-                                  "SP_fit",
-                                  "call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
+    // Set up Data handler
+    DataHandling dataHandler;
+    dataHandler.process_file_list(argv[1]);
+    vector<data> datapoint = dataHandler.GetDataList();
 
-    int call = 0;
+    // Quickly parse through arguments to find theory and filelist
+    string theory_code;
+
+    string flag(argv[2]);
+    if (flag == "--Pascalutsa") theory_code = "Pascalutsa";
+    else if (flag == "--Pasquini") theory_code = "Pasquini";
+    else {
+        cout << "Error: unknown theory " << argv[2] << endl;
+        cout << "Using default Pascalutsa" << endl;
+        theory_code = "Pascalutsa";
+    }
+
+    // Set up fitters
+    CEFTwrapper CEFTfit;
+    DISPwrapper DISPfit;
 
     // Set up APLCON
     APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
@@ -61,18 +148,16 @@ int main(int argc, char *argv[])
     settings.DebugLevel = 4;
     APLCON aplcon("Polarisabilities", settings);
 
-	// Set up fitter
-    Fitter myfit;
-
     // Set initial values
 //  params fitparam(12.1, 1.6, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
 //  params fitparam(12.1, 1.6, -4.3, 2.9, -0.02, 2.2);   // (nominal HDPV) -3.7
-
+    
     // new alpha-beta
 //    params fitparam(11.2, 2.5, -3.3, 3.0, 0.2, 1.1);     // (nominal BxPT) -3.7
-    params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);    // (nominal HDPV)   -3.6
+
+//    constraints alpha_beta_diff(10.5, 1.6);  // Old numbers
+    constraints alpha_beta_diff(7.6, 1.7); // Griesshammer
     constraints alpha_beta_sum(13.8, 0.4);
-    constraints alpha_beta_diff(7.6, 1.7);
     constraints gamma_0(-1.01, 0.08);
     constraints gamma_pi(8.0, 1.8);
 
@@ -108,12 +193,7 @@ int main(int argc, char *argv[])
     aplcon.AddConstraint("gamma0", {"E1E1", "M1M1", "E1M2", "M1E2", "gamma_0"},  g0_constraint);
     aplcon.AddConstraint("gammapi",{"E1E1", "M1M1", "E1M2", "M1E2", "gamma_pi"}, gpi_constraint);
 
-    // Set up Data handler and add data points as measured variables
-    DataHandling dataHandler;
-//    string filelist(argv[1]);
-    dataHandler.process_file_list(argv[1]);
-    vector<data> datapoint = dataHandler.GetDataList();
-
+    // Add datapoints as Measured
     for (auto i = 0; i < datapoint.size(); i++)
     {
         stringstream ss;
@@ -123,6 +203,7 @@ int main(int argc, char *argv[])
                                    datapoint[i].error);
     }
 
+    int call = 0;
     // Create equality constraint for datapoints
     for (auto i = 0; i < datapoint.size(); i++)
     {
@@ -133,7 +214,7 @@ int main(int argc, char *argv[])
         pointname << "datapoint" << i;
 
         // setup a lambda function which returns 0
-        auto equality_constraint = [&myfit,&datapoint,i,&ntuple,&call]
+        auto equality_constraint = [&CEFTfit,&DISPfit,&datapoint,i,&ntuple,&call,&instance,&theory_code]
                 (double experiment,
                 double alpha,
                 double beta,
@@ -142,17 +223,30 @@ int main(int argc, char *argv[])
                 double E1M2,
                 double M1E2)
         {
-            auto theory = myfit.Fit(datapoint[i].theta,
-                                    datapoint[i].energy,
-                                    alpha,
-                                    beta,
-                                    E1E1,
-                                    M1M1,
-                                    E1M2,
-                                    M1E2,
-                                    datapoint[i].data_type);
+            double theory = 0;
+            if(theory_code == "Pascalutsa")
+                 theory = CEFTfit.Fit(datapoint[i].theta,
+                                      datapoint[i].energy,
+                                      alpha,
+                                      beta,
+                                      E1E1,
+                                      M1M1,
+                                      E1M2,
+                                      M1E2,
+                                      datapoint[i].data_type);
+            else if (theory_code == "Pasquini")
+                 theory = DISPfit.Fit(datapoint[i].theta,
+                                      datapoint[i].energy,
+                                      alpha,
+                                      beta,
+                                      E1E1,
+                                      M1M1,
+                                      E1M2,
+                                      M1E2,
+                                      datapoint[i].data_type);
 
-            ntuple->Fill(call,
+            ntuple->Fill(instance,
+                         call,
                          alpha,
                          beta,
                          E1E1,
@@ -160,6 +254,9 @@ int main(int argc, char *argv[])
                          E1M2,
                          M1E2);
             call++;
+
+            if (theory_code == "Pasquini")
+            cout << experiment << " " << theory << endl;
 
             return experiment - theory;
 
@@ -179,11 +276,21 @@ int main(int argc, char *argv[])
 
     // do the fit, obtain ra structure
     const APLCON::Result_t& ra = aplcon.DoFit();
-    cout << ra << endl;
+//    cout << ra << endl;
 
-    cout << "Calls to Executable: " << myfit.GetNCalls() << endl;
-
-    f->Write();
+    // Fits
+    if (CEFTfit.GetNCalls() != 0)
+    {
+        cout << "Using CEFT:" << endl;
+        cout << "Calls to Executable: " << CEFTfit.GetNCalls() << endl;
+        cout << "Number of re-used folders: " << CEFTfit.GetNFolders() << endl;
+    }
+    else if (DISPfit.GetNCalls() != 0)
+    {
+        cout << "Using DISP:" << endl;
+        cout << "Calls to Executable: " << DISPfit.GetNCalls() << endl;
+        cout << "Number of re-used folders: " << DISPfit.GetNFolders() << endl;
+    }
 
     // output time performance
     clock_t end = clock();
@@ -191,6 +298,18 @@ int main(int argc, char *argv[])
 
     cout << "*************************" << endl;
     cout << "Fit completed in " << elapsed_secs << " seconds." << endl;
+    cout << "*************************" << endl;
 
-    return 0;
+    cout << "Instance " << instance << endl;
+    cout << "E1E1 is found to be: " << ra.Variables.at("E1E1").Value.After << " +- " << ra.Variables.at("E1E1").Sigma.After << endl;
+
+    cout << "M1M1 is found to be: " << ra.Variables.at("M1M1").Value.After << " +- " << ra.Variables.at("M1M1").Sigma.After << endl;
+
+    cout << "E1M2 is found to be: " << ra.Variables.at("E1M2").Value.After << " +- " << ra.Variables.at("E1M2").Sigma.After << endl;
+
+    cout << "M1E2 is found to be: " << ra.Variables.at("M1E2").Value.After << " +- " << ra.Variables.at("M1E2").Sigma.After << endl;
+
+    cout << "Chi2/DOF = " << (ra.ChiSquare)/(ra.NDoF) << endl;
+    cout << "Probability = " << ra.Probability << endl;
+    return ra;
 }
