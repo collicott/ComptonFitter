@@ -38,3 +38,6 @@ ComptonEFT
 *.blg
 *.log
 *.pdf
+
+#root files
+*.root
