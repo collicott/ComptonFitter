@@ -17,7 +17,7 @@ link_directories(${ROOT_LIBRARY_DIR})
 include_directories(inc)
 set(ROOT_LIBRARIES "${ROOT_LIBRARIES} -lEG")
 
-set(SRC_LIST src/CEFTwrapper.cpp src/DataHandling.cpp)
+set(SRC_LIST src/DataHandling.cpp src/CEFTwrapper.cpp src/DISPwrapper.cpp src/DisplayResults.cpp)
 
 add_executable(phil_fit ${SRC_LIST} src/phil_fit.cpp)
 
@@ -29,7 +29,7 @@ add_executable(phil_fit ${SRC_LIST} src/phil_fit.cpp)
 add_executable(SP_fit ${SRC_LIST} src/SP_fit.cpp)
 
     target_link_libraries(SP_fit
-    	${APLCON_LIBRARIES}
-    	${ROOT_LIBRARIES}
+        ${APLCON_LIBRARIES}
+        ${ROOT_LIBRARIES}
     )
 
