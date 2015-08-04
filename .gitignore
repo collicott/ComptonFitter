@@ -31,6 +31,12 @@ CMakeLists.txt.user
 
 #ignore theory files
 ComptonEFT
+Pasquini
+HANSTEIN
+PROTON_09
+inputfiles
+pasquini.txt
+rcsdrtot_2011_main
 
 #latex extras
 *.aux
@@ -38,6 +44,7 @@ ComptonEFT
 *.blg
 *.log
 *.pdf
+*.synctex.gz
 
 #root files
 *.root
