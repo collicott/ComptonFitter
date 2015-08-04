@@ -29,7 +29,7 @@ void DataHandling::process_file_list(const string &filename)
 
 void DataHandling::process_file(const string &filename)
 {
-    cout << "processing file " << filename << endl;
+//    cout << "processing file " << filename << endl;
     ifstream input;
 
     input.open(filename);
@@ -45,7 +45,7 @@ void DataHandling::process_file(const string &filename)
     string frame;
     while(input >> theta >> energy >> observable >> error >> observable_type >> frame)
     {
-        cout << theta <<" "<< energy <<" "<<  observable <<" "<<  error <<" "<<  observable_type << " " << frame;
+ //       cout << theta <<" "<< energy <<" "<<  observable <<" "<<  error <<" "<<  observable_type << " " << frame;
 
         // Use toupper to avoid case sensitivity
         std::transform(observable_type.begin(),observable_type.end(),observable_type.begin(), ::toupper);
@@ -56,7 +56,7 @@ void DataHandling::process_file(const string &filename)
         {
             theta = Convert_CM_to_LAB(theta,energy);
         }
-        else cout << endl;
+//        else cout << endl;
 
         if (observable_type == "SIGMA_3")
             datalist.push_back ({theta, energy, observable, error, "Sigma_3"});
