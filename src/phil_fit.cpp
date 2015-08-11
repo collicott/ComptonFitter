@@ -154,6 +154,7 @@ int main(int argc, char *argv[])
                          fitparam.M1E2);
             call++;
 
+//          double chi = pow((experiment - theory),2)/pow(datapoint[i].error,2);
             return experiment - theory;
         };
 
@@ -191,13 +192,15 @@ int main(int argc, char *argv[])
 
     // Let's display the results
     DisplayResults display;
-    display.ShowFitResults(datapoint,
+    display.ShowFitResults(f,
+                           datapoint,
                            fitparam.alpha,
                            fitparam.beta,
                            ra.Variables.at("E1E1").Value.After,
                            fitparam.M1M1,
                            fitparam.E1M2,
-                           fitparam.M1E2);
+                           fitparam.M1E2,
+                           theory_code);
     f->Write();
 
     return 0;
