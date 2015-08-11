@@ -3,6 +3,7 @@
 #include "CEFTwrapper.h"
 #include "DISPwrapper.h"
 #include "DataHandling.h"
+#include "DisplayResults.h"
 #include "TFile.h"
 #include "TNtuple.h"
 #include <ctime>
@@ -39,7 +40,7 @@ struct params {
 class SP_fit {
 public:
     SP_fit() {}
-    APLCON::Result_t run(int argc, char *argv[], params fitparam, int instance, TFile *f, TNtuple *ntuple);
+    APLCON::Result_t run(int argc, char *argv[], vector<data> datapoint, string theory_code, params fitparam, int instance, TFile *f, TNtuple *ntuple);
 };
 
 struct constraints {
@@ -59,6 +60,23 @@ int main(int argc, char *argv[])
     params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
     double scaler_spread = 1.0;
     double spin_spread = 4.0;
+
+    // Set up Data handler
+    DataHandling dataHandler;
+    dataHandler.process_file_list(argv[1]);
+    vector<data> datapoint = dataHandler.GetDataList();
+
+    // Quickly parse through arguments to find theory and filelist
+    string theory_code;
+
+    string flag(argv[2]);
+    if (flag == "--Pascalutsa") theory_code = "Pascalutsa";
+    else if (flag == "--Pasquini") theory_code = "Pasquini";
+    else {
+        cout << "Error: unknown theory " << argv[2] << endl;
+        cout << "Using default Pascalutsa" << endl;
+        theory_code = "Pascalutsa";
+    }
 
     //Type of random number distribution
     uniform_real_distribution<double> alpha(fitparam.alpha - scaler_spread, fitparam.alpha + scaler_spread);  //(min, max)
@@ -88,11 +106,19 @@ int main(int argc, char *argv[])
                                   "result",
                                   "instance:alpha_start:alpha:beta_start:beta:E1E1_start:E1E1:M1M1_start:M1M1:E1M2_start:E1M2:M1E2_start:M1E2");
 
-    // generate 10 random numbers.
-    for (int i=0; i<10; i++)
+    // generate N random fits.
+    int n_fits = 1;
+    double alpha_result = 0.0;
+    double beta_result = 0.0;
+    double E1E1_result = 0.0;
+    double M1M1_result = 0.0;
+    double E1M2_result = 0.0;
+    double M1E2_result = 0.0;
+
+    for (int i=0; i<n_fits; i++)
     {
         params random_fitparam(alpha(rng_alpha), beta(rng_beta), E1E1(rng_E1E1), M1M1(rng_M1M1), E1M2(rng_E1M2), M1E2(rng_M1E2));
-        APLCON::Result_t ra = fitter.run(argc,argv,random_fitparam,i,f,ntuple);
+        APLCON::Result_t ra = fitter.run(argc,argv,datapoint,theory_code,random_fitparam,i,f,ntuple);
 
         result->Fill(i,
                      ra.Variables.at("alpha").Value.Before,
@@ -108,35 +134,36 @@ int main(int argc, char *argv[])
                      ra.Variables.at("M1E2").Value.Before,
                      ra.Variables.at("M1E2").Value.After
                      );
+
+        alpha_result+=ra.Variables.at("alpha").Value.After;
+        beta_result+=ra.Variables.at("beta").Value.After;
+        E1E1_result+=ra.Variables.at("E1E1").Value.After;
+        M1M1_result+=ra.Variables.at("M1M1").Value.After;
+        E1M2_result+=ra.Variables.at("E1M2").Value.After;
+        M1E2_result+=ra.Variables.at("M1E2").Value.After;
     }
+
+    // Compute average parameters
+    alpha_result = alpha_result/double(n_fits);
+    beta_result = beta_result/double(n_fits);
+    E1E1_result = E1E1_result/double(n_fits);
+    M1M1_result = M1M1_result/double(n_fits);
+    E1M2_result = E1M2_result/double(n_fits);
+    M1E2_result = M1E2_result/double(n_fits);
+
+    // Display results
+    DisplayResults display;
+    display.ShowFitResults(f,datapoint,alpha_result,beta_result,E1E1_result,M1M1_result,E1M2_result,M1E2_result,theory_code);
 
     f->Write();
     return 0;
 
-//    int r = fitter.run(argc,argv,fitparam);
 }
 
-APLCON::Result_t SP_fit::run(int argc, char *argv[], params fitparam, int instance, TFile *f, TNtuple *ntuple)
+APLCON::Result_t SP_fit::run(int argc, char *argv[], vector<data> datapoint, string theory_code, params fitparam, int instance, TFile *f, TNtuple *ntuple)
 {
     // Set up some time
     clock_t begin = clock();
-
-    // Set up Data handler
-    DataHandling dataHandler;
-    dataHandler.process_file_list(argv[1]);
-    vector<data> datapoint = dataHandler.GetDataList();
-
-    // Quickly parse through arguments to find theory and filelist
-    string theory_code;
-
-    string flag(argv[2]);
-    if (flag == "--Pascalutsa") theory_code = "Pascalutsa";
-    else if (flag == "--Pasquini") theory_code = "Pasquini";
-    else {
-        cout << "Error: unknown theory " << argv[2] << endl;
-        cout << "Using default Pascalutsa" << endl;
-        theory_code = "Pascalutsa";
-    }
 
     // Set up fitters
     CEFTwrapper CEFTfit;
@@ -258,6 +285,7 @@ APLCON::Result_t SP_fit::run(int argc, char *argv[], params fitparam, int instan
             if (theory_code == "Pasquini")
             cout << experiment << " " << theory << endl;
 
+//            double chi = pow((experiment - theory),2)/pow(datapoint[i].error,2);
             return experiment - theory;
 
         };
@@ -309,7 +337,9 @@ APLCON::Result_t SP_fit::run(int argc, char *argv[], params fitparam, int instan
 
     cout << "M1E2 is found to be: " << ra.Variables.at("M1E2").Value.After << " +- " << ra.Variables.at("M1E2").Sigma.After << endl;
 
-    cout << "Chi2/DOF = " << (ra.ChiSquare)/(ra.NDoF) << endl;
+    cout << "Chi2 = " << ra.ChiSquare << endl;
+    cout << "DOF = " << ra.NDoF << endl;
+    cout << "Chi2/DOF = " << (ra.ChiSquare)/double(ra.NDoF) << endl;
     cout << "Probability = " << ra.Probability << endl;
     return ra;
 }
