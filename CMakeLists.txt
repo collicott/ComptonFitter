@@ -33,3 +33,16 @@ add_executable(SP_fit ${SRC_LIST} src/SP_fit.cpp)
         ${ROOT_LIBRARIES}
     )
 
+add_executable(pseudo ${SRC_LIST} src/PseudoData.cpp)
+
+    target_link_libraries(pseudo
+        ${APLCON_LIBRARIES}
+        ${ROOT_LIBRARIES}
+    )
+
+add_executable(pseudo_SP_fit ${SRC_LIST} src/Pseudo_SP_fit.cpp)
+
+    target_link_libraries(pseudo_SP_fit
+        ${APLCON_LIBRARIES}
+        ${ROOT_LIBRARIES}
+    )
