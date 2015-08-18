@@ -56,6 +56,12 @@ struct constraints {
 
 int main(int argc, char *argv[])
 {
+    if (argc == 1)
+    {
+        cout << "Example: SP_fit data/SP_fit_Collicott_Martel.dat --Pascalutsa out.root 5" << endl;
+        return 1;
+    }
+
     SP_fit fitter;
     params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
     double scaler_spread = 1.0;
@@ -78,6 +84,23 @@ int main(int argc, char *argv[])
         theory_code = "Pascalutsa";
     }
 
+    // Set up some ROOT storage
+    string name;
+    if (argc > 3) name = argv[3];
+    else name = "SP_fit.root";
+    TFile *f = new TFile(name.c_str(),"RECREATE");
+    TNtuple *ntuple = new TNtuple("SP_fit",
+                                  "SP_fit",
+                                  "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
+
+    TNtuple *result = new TNtuple("result",
+                                  "result",
+                                  "instance:alpha_start:alpha:beta_start:beta:E1E1_start:E1E1:M1M1_start:M1M1:E1M2_start:E1M2:M1E2_start:M1E2");
+
+    // Get number of fits
+    int n_fits = 1;
+    if(argv[4]) n_fits = atoi(argv[4]);
+
     //Type of random number distribution
     uniform_real_distribution<double> alpha(fitparam.alpha - scaler_spread, fitparam.alpha + scaler_spread);  //(min, max)
     uniform_real_distribution<double> beta(fitparam.beta - scaler_spread, fitparam.beta + scaler_spread);  //(min, max)
@@ -93,21 +116,7 @@ int main(int argc, char *argv[])
     mt19937 rng_E1M2; rng_E1M2.seed(random_device{}());
     mt19937 rng_M1E2; rng_M1E2.seed(random_device{}());
 
-    // Set up some ROOT storage
-    string name;
-    if (argc > 3) name = argv[3];
-    else name = "SP_fit.root";
-    TFile *f = new TFile(name.c_str(),"RECREATE");
-    TNtuple *ntuple = new TNtuple("SP_fit",
-                                  "SP_fit",
-                                  "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
-
-    TNtuple *result = new TNtuple("result",
-                                  "result",
-                                  "instance:alpha_start:alpha:beta_start:beta:E1E1_start:E1E1:M1M1_start:M1M1:E1M2_start:E1M2:M1E2_start:M1E2");
-
     // generate N random fits.
-    int n_fits = 1;
     double alpha_result = 0.0;
     double beta_result = 0.0;
     double E1E1_result = 0.0;
@@ -115,6 +124,12 @@ int main(int argc, char *argv[])
     double E1M2_result = 0.0;
     double M1E2_result = 0.0;
 
+    double dalpha_result = 0.0;
+    double dbeta_result = 0.0;
+    double dE1E1_result = 0.0;
+    double dM1M1_result = 0.0;
+    double dE1M2_result = 0.0;
+    double dM1E2_result = 0.0;
     for (int i=0; i<n_fits; i++)
     {
         params random_fitparam(alpha(rng_alpha), beta(rng_beta), E1E1(rng_E1E1), M1M1(rng_M1M1), E1M2(rng_E1M2), M1E2(rng_M1E2));
@@ -141,6 +156,13 @@ int main(int argc, char *argv[])
         M1M1_result+=ra.Variables.at("M1M1").Value.After;
         E1M2_result+=ra.Variables.at("E1M2").Value.After;
         M1E2_result+=ra.Variables.at("M1E2").Value.After;
+
+        dalpha_result+=ra.Variables.at("alpha").Sigma.After;
+        dbeta_result+=ra.Variables.at("beta").Sigma.After;
+        dE1E1_result+=ra.Variables.at("E1E1").Sigma.After;
+        dM1M1_result+=ra.Variables.at("M1M1").Sigma.After;
+        dE1M2_result+=ra.Variables.at("E1M2").Sigma.After;
+        dM1E2_result+=ra.Variables.at("M1E2").Sigma.After;
     }
 
     // Compute average parameters
@@ -151,11 +173,29 @@ int main(int argc, char *argv[])
     E1M2_result = E1M2_result/double(n_fits);
     M1E2_result = M1E2_result/double(n_fits);
 
+    dalpha_result = dalpha_result/double(n_fits);
+    dbeta_result = dbeta_result/double(n_fits);
+    dE1E1_result = dE1E1_result/double(n_fits);
+    dM1M1_result = dM1M1_result/double(n_fits);
+    dE1M2_result = dE1M2_result/double(n_fits);
+    dM1E2_result = dM1E2_result/double(n_fits);
+
     // Display results
     DisplayResults display;
     display.ShowFitResults(f,datapoint,alpha_result,beta_result,E1E1_result,M1M1_result,E1M2_result,M1E2_result,theory_code);
 
     f->Write();
+
+    // Output final, averaged results
+    cout << "****************************************" << endl;
+    cout << "Averaged results:" << endl;
+    cout << "alpha: " << alpha_result << " +- " << dalpha_result << endl;
+    cout << "beta: " << beta_result << " +- " << dbeta_result << endl;
+    cout << "E1E1: " << E1E1_result << " +- " << dE1E1_result << endl;
+    cout << "M1M1: " << M1M1_result << " +- " << dM1M1_result << endl;
+    cout << "E1M2: " << E1M2_result << " +- " << dE1M2_result << endl;
+    cout << "M1E2: " << M1E2_result << " +- " << dM1E2_result << endl;
+
     return 0;
 
 }
@@ -282,8 +322,8 @@ APLCON::Result_t SP_fit::run(int argc, char *argv[], vector<data> datapoint, str
                          M1E2);
             call++;
 
-            if (theory_code == "Pasquini")
-            cout << experiment << " " << theory << endl;
+    //        if (theory_code == "Pasquini")
+  //          cout << experiment << " " << theory << endl;
 
 //            double chi = pow((experiment - theory),2)/pow(datapoint[i].error,2);
             return experiment - theory;
