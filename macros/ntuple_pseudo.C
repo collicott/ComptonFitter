@@ -46,7 +46,7 @@ void ntuple_pseudo()
 
   filltuple("beta_fit:generated_E1E1:beta_error",
             "c_beta",
-            "beta reconstructed with B#chiPT",
+            "#beta reconstructed with B#chiPT",
             "results/Pseudo_beta_lowE.pdf",
             2.5,  0, 9);
 
@@ -86,8 +86,10 @@ void filltuple(Char_t* name, Char_t* namec, Char_t* namey, Char_t* namep, double
 
    hist->GetXaxis()->SetTitle("E1E1 generated with HDPV (black) - B#chiPT (blue)");
    hist->GetYaxis()->SetTitle(namey);
-   hist->GetXaxis()->SetTitleSize(0.045);
-   hist->GetYaxis()->SetTitleSize(0.045);
+   hist->GetXaxis()->SetTitleSize(0.05);
+   hist->GetYaxis()->SetTitleSize(0.05);
+   hist->GetXaxis()->SetTitleFont(62);
+   hist->GetYaxis()->SetTitleFont(62);
    hist->SetTitle("");
 
    if (nom == -1000)
