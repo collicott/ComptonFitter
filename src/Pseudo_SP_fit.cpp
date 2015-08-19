@@ -61,21 +61,21 @@ int main(int argc, char *argv[])
     params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
 
     // Set up some ROOT storage
-    TFile *f = new TFile("Pseudo_fitter_search_gen_with_pasquini.root","RECREATE");
+    TFile *f = new TFile("Pseudo_fitter_search_gen_with_pascalutsa_lowE.root","RECREATE");
     TNtuple *ntuple = new TNtuple("SP_fit",
                                   "SP_fit",
                                   "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
 
     TNtuple *result = new TNtuple("result",
                                   "result",
-                                  "instance:alpha_pasquini:alpha_pascalutsa:beta_pasquini:beta_pascalutsa:E1E1_pasquini:E1E1_pascalutsa:M1M1_pasquini:M1M1_pascalutsa:E1M2_pasquini:E1M2_pascalutsa:M1E2_pasquini:M1E2_pascalutsa");
+                                  "instance:generated_E1E1:alpha_fit:alpha_error:beta_fit:beta_error:E1E1_fit:E1E1_error:M1M1_fit:M1M1_error:E1M2_fit:E1M2_error:M1E2_fit:M1E2_error");
 
     int i = 0;
     for (auto E1E1 = -6.0; E1E1 <=6.0; E1E1+=1.0)
     {
         // Generate a new pseudo set using pasquini
         // Create command, pass parameters and folder name
-        string cmd = "pseudo Pasquini "+ to_string(fitparam.alpha) + " "
+        string cmd = "pseudo Pascalutsa "+ to_string(fitparam.alpha) + " "
                                        + to_string(fitparam.beta) + " "
                                        + to_string(E1E1) + " "
                                        + to_string(fitparam.M1M1) + " "
@@ -89,25 +89,26 @@ int main(int argc, char *argv[])
 
         // Set up Data handler
         DataHandling dataHandler;
-        dataHandler.process_file_list("data/SP_fit_pseudo_pasquini.dat");
+        dataHandler.process_file_list("data/SP_fit_pseudo_pascalutsa.dat");
         vector<data> datapoint = dataHandler.GetDataList();
 
         double diff_E1E1 = fitparam.E1E1 - E1E1;
         APLCON::Result_t ra = fitter.run(argc,argv,datapoint,"Pascalutsa",fitparam,i,f,ntuple, diff_E1E1);
 
         result->Fill(i,
-                     ra.Variables.at("alpha").Value.Before,
-                     ra.Variables.at("alpha").Value.After,
-                     ra.Variables.at("beta").Value.Before,
-                     ra.Variables.at("beta").Value.After,
                      E1E1,
+                     ra.Variables.at("alpha").Value.After,
+                     ra.Variables.at("alpha").Sigma.After,
+                     ra.Variables.at("beta").Value.After,
+                     ra.Variables.at("beta").Sigma.After,
                      ra.Variables.at("E1E1").Value.After,
-                     ra.Variables.at("M1M1").Value.Before,
+                     ra.Variables.at("E1E1").Sigma.After,
                      ra.Variables.at("M1M1").Value.After,
-                     ra.Variables.at("E1M2").Value.Before,
+                     ra.Variables.at("M1M1").Sigma.After,
                      ra.Variables.at("E1M2").Value.After,
-                     ra.Variables.at("M1E2").Value.Before,
-                     ra.Variables.at("M1E2").Value.After
+                     ra.Variables.at("E1M2").Sigma.After,
+                     ra.Variables.at("M1E2").Value.After,
+                     ra.Variables.at("M1E2").Sigma.After
                      );
         i++;
     }
