@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
     }
 
     SP_fit fitter;
-    params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
-    double scaler_spread = 1.0;
-    double spin_spread = 4.0;
+    params fitparam(11.2, 2.5, 0, 0, 0, 0);
+    double scaler_spread = 2;
+    double spin_spread = 6;
 
     // Set up Data handler
     DataHandling dataHandler;
@@ -93,9 +93,14 @@ int main(int argc, char *argv[])
                                   "SP_fit",
                                   "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
 
+    TNtuple *start_values = new TNtuple("start_values",
+                                  "start_values",
+                                  "instance:alpha_start:beta_start:E1E1_start:M1M1_start:E1M2_start:M1E2_start");
+
+
     TNtuple *result = new TNtuple("result",
                                   "result",
-                                  "instance:alpha_start:alpha:beta_start:beta:E1E1_start:E1E1:M1M1_start:M1M1:E1M2_start:E1M2:M1E2_start:M1E2");
+                                  "instance:alpha:alpha_error:beta:beta_error:E1E1:E1E1_error:M1M1:M1M1_error:E1M2:E1M2_error:M1E2:M1E2_error:chi");
 
     // Get number of fits
     int n_fits = 1;
@@ -135,19 +140,29 @@ int main(int argc, char *argv[])
         params random_fitparam(alpha(rng_alpha), beta(rng_beta), E1E1(rng_E1E1), M1M1(rng_M1M1), E1M2(rng_E1M2), M1E2(rng_M1E2));
         APLCON::Result_t ra = fitter.run(argc,argv,datapoint,theory_code,random_fitparam,i,f,ntuple);
 
-        result->Fill(i,
+        start_values->Fill(i,
                      ra.Variables.at("alpha").Value.Before,
-                     ra.Variables.at("alpha").Value.After,
                      ra.Variables.at("beta").Value.Before,
-                     ra.Variables.at("beta").Value.After,
                      ra.Variables.at("E1E1").Value.Before,
-                     ra.Variables.at("E1E1").Value.After,
                      ra.Variables.at("M1M1").Value.Before,
-                     ra.Variables.at("M1M1").Value.After,
                      ra.Variables.at("E1M2").Value.Before,
+                     ra.Variables.at("M1E2").Value.Before
+                     );
+
+        result->Fill(i,
+                     ra.Variables.at("alpha").Value.After,
+                     ra.Variables.at("alpha").Sigma.After,
+                     ra.Variables.at("beta").Value.After,
+                     ra.Variables.at("beta").Sigma.After,
+                     ra.Variables.at("E1E1").Value.After,
+                     ra.Variables.at("E1E1").Sigma.After,
+                     ra.Variables.at("M1M1").Value.After,
+                     ra.Variables.at("M1M1").Sigma.After,
                      ra.Variables.at("E1M2").Value.After,
-                     ra.Variables.at("M1E2").Value.Before,
-                     ra.Variables.at("M1E2").Value.After
+                     ra.Variables.at("E1M2").Sigma.After,
+                     ra.Variables.at("M1E2").Value.After,
+                     ra.Variables.at("M1E2").Sigma.After,
+                     ra.ChiSquare
                      );
 
         alpha_result+=ra.Variables.at("alpha").Value.After;
@@ -181,8 +196,8 @@ int main(int argc, char *argv[])
     dM1E2_result = dM1E2_result/double(n_fits);
 
     // Display results
-    DisplayResults display;
-    display.ShowFitResults(f,datapoint,alpha_result,beta_result,E1E1_result,M1M1_result,E1M2_result,M1E2_result,theory_code);
+//    DisplayResults display;
+//    display.ShowFitResults(f,datapoint,alpha_result,beta_result,E1E1_result,M1M1_result,E1M2_result,M1E2_result,theory_code);
 
     f->Write();
 
