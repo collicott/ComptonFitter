@@ -59,47 +59,28 @@ int main(int argc, char *argv[])
 
     SP_fit fitter;
     params fitparam(11.2, 2.5, -4.3, 2.9, -0.02, 2.2);
-    double scaler_spread = 1.0;
-    double spin_spread = 4.0;
-
-    //Type of random number distribution
-    uniform_real_distribution<double> alpha(fitparam.alpha - scaler_spread, fitparam.alpha + scaler_spread);  //(min, max)
-    uniform_real_distribution<double> beta(fitparam.beta - scaler_spread, fitparam.beta + scaler_spread);  //(min, max)
-    uniform_real_distribution<double> E1E1(fitparam.E1E1 - spin_spread, fitparam.E1E1 + spin_spread);  //(min, max)
-    uniform_real_distribution<double> M1M1(fitparam.M1M1 - spin_spread, fitparam.M1M1 + spin_spread);  //(min, max)
-    uniform_real_distribution<double> E1M2(fitparam.E1M2 - spin_spread, fitparam.E1M2 + spin_spread);  //(min, max)
-    uniform_real_distribution<double> M1E2(fitparam.M1E2 - spin_spread, fitparam.M1E2 + spin_spread);  //(min, max)
-
-    mt19937 rng_alpha; rng_alpha.seed(random_device{}());
-    mt19937 rng_beta; rng_beta.seed(random_device{}());
-    mt19937 rng_E1E1; rng_E1E1.seed(random_device{}());
-    mt19937 rng_M1M1; rng_M1M1.seed(random_device{}());
-    mt19937 rng_E1M2; rng_E1M2.seed(random_device{}());
-    mt19937 rng_M1E2; rng_M1E2.seed(random_device{}());
-
 
     // Set up some ROOT storage
-    TFile *f = new TFile("Pseudo_fitter_error_study.root","RECREATE");
+    TFile *f = new TFile("Pseudo_fitter_search_gen_with_pascalutsa_lowE.root","RECREATE");
     TNtuple *ntuple = new TNtuple("SP_fit",
                                   "SP_fit",
                                   "instance:call:alpha:beta:E1E1:M1M1:E1M2:M1E2");
 
     TNtuple *result = new TNtuple("result",
                                   "result",
-                                  "instance:generated_error:alpha_fit:alpha_error:beta_fit:beta_error:E1E1_fit:E1E1_error:M1M1_fit:M1M1_error:E1M2_fit:E1M2_error:M1E2_fit:M1E2_error");
+                                  "instance:generated_E1E1:alpha_fit:alpha_error:beta_fit:beta_error:E1E1_fit:E1E1_error:M1M1_fit:M1M1_error:E1M2_fit:E1M2_error:M1E2_fit:M1E2_error");
 
     int i = 0;
-    for (auto error = 0.5; error <=20.0; error+=0.5)
+    for (auto E1E1 = -6.0; E1E1 <=6.0; E1E1+=1.0)
     {
         // Generate a new pseudo set using pasquini
         // Create command, pass parameters and folder name
         string cmd = "pseudo Pascalutsa "+ to_string(fitparam.alpha) + " "
                                        + to_string(fitparam.beta) + " "
-                                       + to_string(fitparam.E1E1) + " "
+                                       + to_string(E1E1) + " "
                                        + to_string(fitparam.M1M1) + " "
                                        + to_string(fitparam.E1M2) + " "
-                                       + to_string(fitparam.M1E2) + " "
-                                       + to_string(error);
+                                       + to_string(fitparam.M1E2);
 
 
 
@@ -111,77 +92,24 @@ int main(int argc, char *argv[])
         dataHandler.process_file_list("data/SP_fit_pseudo_pascalutsa.dat");
         vector<data> datapoint = dataHandler.GetDataList();
 
-        // generate N random fits.
-        double alpha_result = 0.0;
-        double beta_result = 0.0;
-        double E1E1_result = 0.0;
-        double M1M1_result = 0.0;
-        double E1M2_result = 0.0;
-        double M1E2_result = 0.0;
-
-        double dalpha_result = 0.0;
-        double dbeta_result = 0.0;
-        double dE1E1_result = 0.0;
-        double dM1M1_result = 0.0;
-        double dE1M2_result = 0.0;
-        double dM1E2_result = 0.0;
-
-        int n_fits = 3;
-        for (auto j = 0; j < n_fits; j++)
-        {
-             params random_fitparam(alpha(rng_alpha),
-                                    beta(rng_beta),
-                                    E1E1(rng_E1E1),
-                                    M1M1(rng_M1M1),
-                                    E1M2(rng_E1M2),
-                                    M1E2(rng_M1E2));
-
-            APLCON::Result_t ra = fitter.run(argc,argv,datapoint,"Pascalutsa",random_fitparam,i,f,ntuple, 0);
-
-            alpha_result+=ra.Variables.at("alpha").Value.After;
-            beta_result+=ra.Variables.at("beta").Value.After;
-            E1E1_result+=ra.Variables.at("E1E1").Value.After;
-            M1M1_result+=ra.Variables.at("M1M1").Value.After;
-            E1M2_result+=ra.Variables.at("E1M2").Value.After;
-            M1E2_result+=ra.Variables.at("M1E2").Value.After;
-
-            dalpha_result+=ra.Variables.at("alpha").Sigma.After;
-            dbeta_result+=ra.Variables.at("beta").Sigma.After;
-            dE1E1_result+=ra.Variables.at("E1E1").Sigma.After;
-            dM1M1_result+=ra.Variables.at("M1M1").Sigma.After;
-            dE1M2_result+=ra.Variables.at("E1M2").Sigma.After;
-            dM1E2_result+=ra.Variables.at("M1E2").Sigma.After;
-        }
-
-        // Compute average parameters
-        alpha_result = alpha_result/double(n_fits);
-        beta_result = beta_result/double(n_fits);
-        E1E1_result = E1E1_result/double(n_fits);
-        M1M1_result = M1M1_result/double(n_fits);
-        E1M2_result = E1M2_result/double(n_fits);
-        M1E2_result = M1E2_result/double(n_fits);
-
-        dalpha_result = dalpha_result/double(n_fits);
-        dbeta_result = dbeta_result/double(n_fits);
-        dE1E1_result = dE1E1_result/double(n_fits);
-        dM1M1_result = dM1M1_result/double(n_fits);
-        dE1M2_result = dE1M2_result/double(n_fits);
-        dM1E2_result = dM1E2_result/double(n_fits);
+        double diff_E1E1 = fitparam.E1E1 - E1E1;
+        APLCON::Result_t ra = fitter.run(argc,argv,datapoint,"Pascalutsa",fitparam,i,f,ntuple, diff_E1E1);
 
         result->Fill(i,
-                     error,
-                     alpha_result,
-                     dalpha_result,
-                     beta_result,
-                     dbeta_result,
-                     E1E1_result,
-                     dE1E1_result,
-                     M1M1_result,
-                     dM1M1_result,
-                     E1M2_result,
-                     dE1M2_result,
-                     M1E2_result,
-                     dM1E2_result);
+                     E1E1,
+                     ra.Variables.at("alpha").Value.After,
+                     ra.Variables.at("alpha").Sigma.After,
+                     ra.Variables.at("beta").Value.After,
+                     ra.Variables.at("beta").Sigma.After,
+                     ra.Variables.at("E1E1").Value.After,
+                     ra.Variables.at("E1E1").Sigma.After,
+                     ra.Variables.at("M1M1").Value.After,
+                     ra.Variables.at("M1M1").Sigma.After,
+                     ra.Variables.at("E1M2").Value.After,
+                     ra.Variables.at("E1M2").Sigma.After,
+                     ra.Variables.at("M1E2").Value.After,
+                     ra.Variables.at("M1E2").Sigma.After
+                     );
         i++;
     }
 
@@ -203,7 +131,7 @@ APLCON::Result_t SP_fit::run(int argc, char *argv[], vector<data> datapoint, str
     // Set up APLCON
     APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
     settings.MaxIterations = 1000;
-    settings.DebugLevel = 0;
+    settings.DebugLevel = 4;
     APLCON aplcon("Polarisabilities", settings);
 
     // Set initial values
