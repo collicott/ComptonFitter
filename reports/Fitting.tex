@@ -52,25 +52,83 @@
 \maketitle
 
 \begin{abstract}
-	A robust fitting routine, known as CS-APLCON\texttt{++}, was designed to extract the proton polarisabilities (both spin and scalar) from Compton scattering data. This fitter is based upon APLCON - a constrained least square fitter by Volker Blobel. As APLCON is written in Fortran, a c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. B$\chi$PT, a covariant baryon chiral perturbation calculation from Vladimir Pascalutsa, was used as a theoretical framework. A discussion of different fit results will be presented here. \vspace{8mm}
+	A robust fitting routine, known as CS-APLCON\texttt{++}, was designed to extract the proton polarisabilities from Compton scattering data. This fitter is based upon APLCON - a constrained least square fitter by Volker Blobel. As APLCON is written in Fortran, a c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. A discussion of different fit results will be presented here. \vspace{3mm}
 \end{abstract}
 
-\section{Fitting algorithm: CS-APLCON\texttt{++}}
+\noindent A new fitting algorithm, known as CS-APLCON\texttt{++}, was designed based upon the previous work by Rory/Phil/Ali. A primary goal was to design a more robust (automated) program to extract the proton polarisabilities from Compton scattering (CS) data. Previous extractions of the spin polarisabilities (SPs) as been centered upon the Pasquini dispersion relation framework. However, the time required to produce data points from this code is roughly 30 seconds per data point. Comparatively, the Pascalutsa code is much faster (well below 1 second per point). For this reason, within this report, the Pascalutsa code is often adopted as the default for fitting. However, fits from both HDPV (Pasquini) and B$\chi$PT (Pascalutsa) will be presented.
 
-A new fitting algorithm, known as CS-APLCON\texttt{++}, was designed based upon the previous work by Rory/Phil/Ali. A primary goal was to design a more robust (automated) program to extract the proton polarisabilities from Compton scattering (CS) data. Previous extractions of the spin polarisabilities (SPs) as been centered upon the Pasquini dispersion relation framework. However, the time required to produce data points from this code is roughly 30-60 seconds per data point. Comparatively, the Pascalutsa code is much faster (well below 1 second per point). For this reason, the Pascalutsa code was adopted as a first test.
+\noindent \\This report will cover the following
 
-\subsection{Working with APLCON\texttt{++}}
+\textbf{- Section 1:} a brief discussion of fitting methods
 
-APLCON\texttt{++} is a constrained least square fitter by Volker Blobel written in Fortran. A c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. A new instance of APLCON\texttt{++} can be called in the following manner: \\
+\textbf{- Section 2:} a discussion of CS-APLCON\texttt{++}
 
-\begin{lstlisting}
-// Set up APLCON
-APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
-settings.MaxIterations = 1000;
-APLCON aplcon("Polarisabilities", settings);
-\end{lstlisting}
+\textbf{- Section 3:} available data sets
+
+\textbf{- Section 4:} theoretical predictions
+
+\textbf{- Section 5:} Previous fits
+
+\textbf{- Section 6:} Analysis of pseudo data
+
+\textbf{- Section 7:} Analysis of experimental data
+
+
+\noindent \\ Pseudo data studies attempt to examine the model dependence of fitting, with the conclusion that there is a significant model dependence within the $\Delta$-resonance region (which is not present at lower energies). Pseudo data is also used to study the connection between experimental errors and polarisability errors. Finally fits to the experimental data from MAMI and LEGS are performed using both HDPV and B$\chi$PT. In the case of MAMI data (Collicott + Martel) the fits are in agreement to previous fits. However, in the case of LEGS and MAMI data, the fits are dramatically different (something which should be discussed).
+
 
 \newpage
+\section{A (very short) discussion of fitting methods} 
+
+\noindent \textbf{$\chi^{2}$ minimization}
+
+\noindent \\Within our working group, previous fits have been performed using a $\chi^{2}$-minimization approach. In this framework, a $\chi^{2}$ value is calculated for each point with the following,
+%
+\begin{equation}
+\chi^{2} = \frac{(\Sigma_{exp} - \Sigma_{theory})^{2}}{(\sigma_{exp})^{2}} ,\nonumber
+\end{equation}
+%
+where $\Sigma_{theory}$ is a function of ($\bar{\alpha}_{E1}$, $\bar{\beta}_{M1}$, $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$). It is the sum $\chi^{2}$ values which is minimized. \\
+
+\noindent \textbf{Least squares minimization}
+
+\noindent \\An alternate to $\chi^{2}$-minimization is a least squares minimization approach, which attempts to reduce the sum of squared residuals, which have the form, 
+%
+\begin{equation}
+\text{R}^{2} = (\Sigma_{exp} - \Sigma_{theory})^{2} .\nonumber
+\end{equation}
+
+\noindent These two methods should, and do, agree for simple cases. However, a review of the literature would suggest that $\chi^{2}$ minimization, in many cases, cannot be  applied. This includes (but is not limited to) non-gaussian errors, correlated parameters (something we may be dealing with), incorrectly determined errors which introduce false weighting (bias) to data points (again something which we could be dealing with). Least squares minimization, which can determine covariance through fitting, is supposedly a method to reduce this bias. I'm no expert in fitting, but from reading some books and papers before starting this fitting project, the general consensus seems to be \enquote{If the two methods agree, then that is great. If they don't, it suggests $\chi^{2}$ may not apply}.
+
+\noindent \\ \textbf{My suggestion:} We should reach out to somebody with \textbf{a lot} of experience in fitting. \\
+
+\noindent\\ \textbf{Theory codes} \\
+
+\noindent I currently have access to two theory codes.
+\begin{enumerate}
+	\item HDPV (B. Pasquini) - dispersion relation code
+	\item B$\chi$PT (V. Pascalutsa) - chiral perturbation code
+\end{enumerate}
+
+\noindent \\Inputs for each code are the same
+\begin{itemize}
+	\item data point: Energy, E/Theta, $\theta$
+	\item polarisabilities: $\bar{\alpha}_{E1}$, $\bar{\beta}_{M1}$, $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, and $\bar{\gamma}_{M1E2}$
+\end{itemize}
+
+\newpage
+\section{Fitting algorithm: CS-APLCON\texttt{++}}
+\subsection{Working with APLCON\texttt{++}}
+
+APLCON\texttt{++} is a constrained least square fitter by Volker Blobel written in Fortran. A c\texttt{++} wrapper was written by Andreas Neiser, known as APLCON\texttt{++}. 
+%A new instance of APLCON\texttt{++} can be called in the following manner: \\
+%\begin{lstlisting}
+%// Set up APLCON
+%APLCON::Fit_Settings_t settings = APLCON::Fit_Settings_t::Default;
+%settings.MaxIterations = 1000;
+%APLCON aplcon("Polarisabilities", settings);
+%\end{lstlisting}
+
 \noindent APLCON works primarily with measured and unmeasured variables. 
 
 \begin{lstlisting}
@@ -112,12 +170,12 @@ APLCON aplcon("Polarisabilities", settings);
 								    sum_constraint);
 \end{lstlisting}
 
-\noindent \\ Once all variables have been included, and all constraints have been specified, APLCON will try to minimize each constraint: \\
+\noindent Once all variables have been included, and all constraints have been specified, APLCON will try to minimize each constraint. 
 
-\begin{lstlisting}
-// Call fit routine
-    const APLCON::Result_t& ra = aplcon.DoFit();
-\end{lstlisting}
+%\begin{lstlisting}
+%// Call fit routine
+%    const APLCON::Result_t& ra = aplcon.DoFit();
+%\end{lstlisting}
 
 \subsection{Applied Constraints}
 
@@ -168,7 +226,7 @@ Data sets can be added to the fitting routine with a text file. Each data set sh
 
 \noindent \textbf{Measured polarisabilities} \\
 
-The sum and difference of the scaler polarisabilities ($\alpha+\beta$ and $\alpha-\beta$) are added as a constraint using lambda functions with the following syntax: 
+The sum and difference of the scalar polarisabilities ($\alpha+\beta$ and $\alpha-\beta$) are added as a constraint using lambda functions with the following syntax: \\
 
 \begin{lstlisting}
 // Set up constraint lamda functions
@@ -184,7 +242,7 @@ The sum and difference of the scaler polarisabilities ($\alpha+\beta$ and $\alph
 								    diff_constraint);
 \end{lstlisting}
 
-\noindent \\Similarily, the forward and backward spin polarisabilities ($\gamma_0$ and $\gamma_{\pi}$) are added as a constraint using lambda functions with the following syntax: 
+\noindent \\Similarly, the forward and backward spin polarisabilities ($\gamma_0$ and $\gamma_{\pi}$) are added as a constraint using lambda functions with the following syntax: \\
 
 \begin{lstlisting}
 // Set up constraint lamda functions
@@ -206,14 +264,16 @@ The sum and difference of the scaler polarisabilities ($\alpha+\beta$ and $\alph
 
 \end{lstlisting}
 
-%\noindent \\The constraints used for this fitting were
-%\begin{eqnarray}
-%\alpha + \beta &=& \hspace{4mm}13.8 \pm 0.4 \\
-%\alpha - \beta &=& \hspace{5.5mm} 7.6 \pm 0.9 \\
-%\gamma_0 &=&  \hspace{1mm}-1.01 \pm 0.18 \\
-%\gamma_\pi &=& \hspace{5.5mm}8.0 \pm 1.8
-%\end{eqnarray}
+\noindent \\The constraints used for this fitting were
+\begin{eqnarray}
+\alpha + \beta &=& \hspace{4mm}13.8 \pm 0.4 \nonumber \\
+\alpha - \beta &=& \hspace{5.5mm} 7.6 \pm 0.9 \nonumber \\
+\gamma_0 &=&  \hspace{1mm}-1.01 \pm 0.18 \nonumber \\
+\gamma_\pi &=& \hspace{5.5mm}8.0 \pm 1.8 \nonumber
+\end{eqnarray}
 
+
+\newpage
 \section{Data sets}
 Three main data sets will be used, 
 \begin{enumerate}
@@ -270,7 +330,7 @@ Three main data sets will be used,
 	\end{tabular}
 \end{table}
 %
-
+\newpage
 \section{Fitting pseudo data with CS-APLCON\texttt{++}}
 
 A pseudo data generator was written which follows the procedure :
@@ -281,8 +341,8 @@ A pseudo data generator was written which follows the procedure :
 	\item If desired, observable is gauss-smeared to mimic experimental fluctuations.
 \end{enumerate}
 
-\newpage
-\noindent A snippet of the code for the pseudo generator is given:
+\noindent \\A snippet of the code for the pseudo generator is given:\\
+
 \begin{lstlisting}
 // 5 Sigma_2x points within E = (280,300) and theta = (60,150) 
 pseudo_set.push_back ({5,280.0,300.0,60,150,"Sigma_2x"});
@@ -293,7 +353,7 @@ pseudo_set.push_back ({5,280.0,300.0,60,150,"Sigma_2x"});
 pseudo.Generate(pseudo_data, pol_params, false, 10.0, theory_code);
 
 \end{lstlisting}
-
+\vspace{15mm}
 \subsection{Are the two theory codes \enquote{compatible}?}
 
 Pseudo data, generated with known scalar/spin polarisabilities, can be used to study the connection between theory codes. In an ideal world, pseudo data generated with one theory code could be fit using either code, with the resulting polarisabilities being equal (or at least similar). The following section outlines a series of fits using pseudo data generated with the B$\chi$PT theory code (section \ref{Sec:Pseudo1}) and with the HDPV theory code (section \ref{Sec:Pseudo2}). In both cases, the pseudo data is then fit using both codes. In each case, no smearing of the theoretical data points is applied.
@@ -305,7 +365,7 @@ Pseudo data, generated with known scalar/spin polarisabilities, can be used to s
 	\item No smearing, error set to 1$\%$. Just a note: without smearing, the error affects only the convergence tests of the fitter. A discussion of convergence criteria is presented in section \ref{Section:Convergence}.
 \end{itemize}
 
-\vspace{5mm}
+\newpage
 \subsubsection{Test 1: Pseudo data with B$\chi$PT - no smear/error} \label{Sec:Pseudo1}
 
 \noindent First some nominal numbers:
@@ -315,34 +375,17 @@ Pseudo data, generated with known scalar/spin polarisabilities, can be used to s
 		\hline %inserts double horizontal lines
 		                      & Gen. with B$\chi$PT & Fit with B$\chi$PT & Fit with HDPV\\
 		\hline\hline
-		$\bar{\alpha}_{E1}$   & 11.2 & 11.18 $\pm$ 0.23 & ? \\
-		$\bar{\beta}_{M1}$    & 2.5  & 2.52 $\pm$ 0.19 & ?\\
-		$\bar{\gamma}_{E1E1}$ & -3.3 & -3.30 $\pm$ 0.09 & ? \\
-		$\bar{\gamma}_{M1M1}$ & 3.0 & 3.00 $\pm$ 0.10 & ? \\
-		$\bar{\gamma}_{E1M2}$ & 0.2  & 0.20 $\pm$ 0.15 & ?\\
-		$\bar{\gamma}_{M1E2}$ & 1.1 & 1.10 $\pm$ 0.13 & ?\\[0.5ex]
+		$\bar{\alpha}_{E1}$   & 11.2 & 11.18 $\pm$ 0.23 & 14.1 $\pm$ 0.53 \\
+		$\bar{\beta}_{M1}$    & 2.5  & 2.52 $\pm$ 0.19 & -0.44 $\pm$ 0.35 \\
+		$\bar{\gamma}_{E1E1}$ & -3.3 & -3.30 $\pm$ 0.09 & -5.2 $\pm$ 0.29 \\
+		$\bar{\gamma}_{M1M1}$ & 3.0 & 3.00 $\pm$ 0.10 & 5.9 $\pm$ 0.28 \\
+		$\bar{\gamma}_{E1M2}$ & 0.2  & 0.20 $\pm$ 0.15 & -2.5 $\pm$ 0.38 \\
+		$\bar{\gamma}_{M1E2}$ & 1.1 & 1.10 $\pm$ 0.13 & 3.0 $\pm$ 0.37 \\[0.5ex]
 		\hline
 	\end{tabular}
 \end{table}
 
-\newpage
-\noindent Now some I made up ($\gamma_{0}$ and $\gamma_{\pi}$ would be roughly correct):
-\begin{table}[h!]
-	\centering % used for centering table
-	\begin{tabular}{|c|c|c|c|} % centered columns (4 columns)
-		\hline %inserts double horizontal lines
-		& Gen. with B$\chi$PT & Fit with B$\chi$PT & Fit with HDPV\\
-		\hline\hline
-		$\bar{\alpha}_{E1}$   & 11.2 & 11.16 $\pm$ 0.22 & ? \\
-		$\bar{\beta}_{M1}$    & 2.5  & 2.59 $\pm$ 0.31 & ?\\
-		$\bar{\gamma}_{E1E1}$ & -1.0 & -1.00 $\pm$ 0.09 & ? \\
-		$\bar{\gamma}_{M1M1}$ & 1.0 & 1.02 $\pm$ 0.16 & ? \\
-		$\bar{\gamma}_{E1M2}$ & -2.5  & -2.49 $\pm$ 0.22 & ?\\
-		$\bar{\gamma}_{M1E2}$ & 3.5 & 3.48 $\pm$ 0.17 & ?\\[0.5ex]
-		\hline
-	\end{tabular}
-\end{table}
-
+\vspace{10mm}
 \subsubsection{Test 2: Pseudo data with HDPV - no smear/error} \label{Sec:Pseudo2}
 
 Test 1 is repeated using HDPV as the pseudo data generator. 
@@ -353,37 +396,29 @@ Test 1 is repeated using HDPV as the pseudo data generator.
 		\hline %inserts double horizontal lines
 		& Gen. with HDPV & Fit with B$\chi$PT & Fit with HDPV\\
 		\hline\hline
-		$\bar{\alpha}_{E1}$   & 11.2 & 8.8 $\pm$ 0.14 &  \\
-		$\bar{\beta}_{M1}$    & 2.5  & 5.7 $\pm$ 0.25 & ?\\
-		$\bar{\gamma}_{E1E1}$ & -3.3 & -2.3 $\pm$ 0.04 & ? \\
-		$\bar{\gamma}_{M1M1}$ & 3.0  & 1.3 $\pm$ 0.11 & ? \\
-		$\bar{\gamma}_{E1M2}$ & 0.2  & 2.5 $\pm$ 0.11 & ?\\
-		$\bar{\gamma}_{M1E2}$ & 1.1  & -0.5 $\pm$ 0.06 & ?\\[0.5ex]
+		$\bar{\alpha}_{E1}$   & 11.2 & 8.2 $\pm$ 0.20 & 11.2 $\pm$ 0.40 \\
+		$\bar{\beta}_{M1}$    & 2.5  & 6.1 $\pm$ 0.20 & 2.6 $\pm$ 0.26 \\
+		$\bar{\gamma}_{E1E1}$ & -3.3 & -2.3 $\pm$ 0.04 & -3.3 $\pm$ 0.09 \\
+		$\bar{\gamma}_{M1M1}$ & 3.0  & 2.0 $\pm$ 0.12 & 3.0 $\pm$ 0.13 \\
+		$\bar{\gamma}_{E1M2}$ & 0.2  & 1.2 $\pm$ 0.20 & 0.2 $\pm$ 0.20 \\
+		$\bar{\gamma}_{M1E2}$ & 1.1  & 0.1 $\pm$ 0.12 & 1.1 $\pm$ 0.12 \\[0.5ex]
 		\hline
 	\end{tabular}
 \end{table}
 
-
-\begin{table}[h!]
-	\centering % used for centering table
-	\begin{tabular}{|c|c|c|c|} % centered columns (4 columns)
-		\hline %inserts double horizontal lines
-		& Gen. with B$\chi$PT & Fit with B$\chi$PT & Fit with HDPV\\
-		\hline\hline
-		$\bar{\alpha}_{E1}$   & 11.2 & 10.76 $\pm$ 0.23 & ? \\
-		$\bar{\beta}_{M1}$    & 2.5  & 5.32 $\pm$ 0.45 & ?\\
-		$\bar{\gamma}_{E1E1}$ & -1.0 & -0.79 $\pm$ 0.06 & ? \\
-		$\bar{\gamma}_{M1M1}$ & 1.0  & -1.36 $\pm$ 0.17 & ? \\
-		$\bar{\gamma}_{E1M2}$ & -2.5 & 1.9   $\pm$ 0.15 & ?\\
-		$\bar{\gamma}_{M1E2}$ & 3.5  & 1.02 $\pm$ 0.08 & ?\\[0.5ex]
-		\hline
-	\end{tabular}
-\end{table}
-
+\vspace{10mm}
 \subsubsection{Conclusions}
 
+Both theory codes are
+\begin{itemize}
+	\item capable of reconstructing pseudo data generated with their own code
+	\item incapable of reconstructing pseudo data generated with the other code
+\end{itemize}  
+
+\noindent \\ This suggests a model dependence associated with the theory code used for fitting. Although the two codes are not directly compatible, perhaps with some study it would be possible to understand the correlation between the two. This idea is explored in the next section (section 6.2).
+
 \newpage
-\subsection{Are the two theory codes even \enquote{correlated}?}
+\subsection{Are the two theory codes even \enquote{correlated}?} \label{Sec:pseu_highE}
 As shown in Sections \ref{Sec:Pseudo1} and \ref{Sec:Pseudo2}, pseudo data generated with one theory code is not properly reconstructed if the fit is performed with a different code. Although not surprising, it begs the question, \textit{are the theory codes even correlated}? 
 
 \noindent \\Pseudo data was produced using HDPV and B$\chi$PT:
@@ -410,45 +445,32 @@ and the $\gamma_{0}$ and $\gamma_{\pi}$ constraints are modified such that,
 \gamma_{\pi} = -(\bar{\gamma}_{E1E1}+ \delta_{E1E1}) + \bar{\gamma}_{M1M1} - \bar{\gamma}_{E1M2} + \bar{\gamma}_{M1E2}. 
 \end{equation}
 
-\noindent \vspace{5mm}\\ Figures (a) through (f) show the reconstructed spin/scalar polarisabilities as $\bar{\gamma}_{E1E1}$ is varied. As only $\bar{\gamma}_{E1E1}$ is varied, this is a relatively simple test of the correlation between HDPV and B$\chi$PT codes. In an ideal world, only the reconstructed $\bar{\gamma}_{E1E1}$ would vary, while the other polarisabilities remain constant. This appears to be true for pseudo data generated with, and fit using, B$\chi$PT. However, this is not the case when data is generated with HDPV and fit using B$\chi$PT. This suggests a strong model dependance between the two theory codes (with interplay between the variables).
+\noindent \vspace{5mm}\\ Figures 6.2.1 and 6.2.2 show the reconstructed spin/scalar polarisabilities as $\bar{\gamma}_{E1E1}$ is varied for high and low energy respectively. As only $\bar{\gamma}_{E1E1}$ is varied, this is a relatively simple test of the correlation between HDPV and B$\chi$PT codes. In an ideal world, only the reconstructed $\bar{\gamma}_{E1E1}$ would vary, while the other polarisabilities remain constant. This appears to be true (independent of energy) for pseudo data generated with, and fit using, B$\chi$PT. This is also true when data is generated with HDPV and fit using B$\chi$PT at low energies. However, this correlation is lost at high energies. This suggests a strong model dependence between the two theory codes (with interplay between the variables) which exists at high energies, but is reduced or non-existant at low energies.
 
-\noindent \\ \textbf{Conclusion:} Let's take the words \enquote{model independant} out of our vocabulary.
+\noindent \\ \textbf{Conclusion:} Let's be careful with words like \enquote{model independant} at $\Delta$ energies.
 
 \newpage
 \begin{figure}[h!]
 	\centering
-	\subfloat[$\bar{\gamma}_{E1E1}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$  generated with either HDPV (black) or B$\chi$PT (blue).  $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. The red line shows the expected (y=x) correlation.] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1E1.pdf}} \\
-	
-	\subfloat[$\bar{\gamma}_{M1M1}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$  generated with either HDPV (black) or B$\chi$PT (blue).  $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. The green line shows the nominal/generated value of $\bar{\gamma}_{M1M1}$.] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1M1.pdf}}
+	\subfloat[$\bar{\alpha}_{E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_alpha.pdf}}
+	\subfloat[$\bar{\beta}_{M1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_beta.pdf}}\\
+	\subfloat[$\bar{\gamma}_{E1E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1E1.pdf}}
+	\subfloat[$\bar{\gamma}_{M1M11}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1M1.pdf}}\\	
+	\subfloat[$\bar{\gamma}_{E1M2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1M2.pdf}}
+	\subfloat[$\bar{\gamma}_{M1E2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1E2.pdf}}\\		
 \end{figure}
 
-\newpage
-\begin{figure}[h!]
-	\ContinuedFloat
-	\centering
-	\subfloat[$\bar{\gamma}_{E1M2}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$  generated with either HDPV (black) or B$\chi$PT (blue).  $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. The green line shows the nominal/generated value of $\bar{\gamma}_{E1M2}$.] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1M2.pdf}} \\
-	
-	\subfloat[$\bar{\gamma}_{M1E2}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$  generated with either HDPV (black) or B$\chi$PT (blue).  $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. The green line shows the nominal/generated value of $\bar{\gamma}_{M1E2}$.] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1E2.pdf}} 
-\end{figure}
+\noindent \textbf{Fig 6.2.1:} Polarisabilities (reconstructed with B$\chi$PT) are shown as a function of $\bar{\gamma}_{E1E1}$  generated with either HDPV (black) or B$\chi$PT (blue).  $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. The red line shows the expected (y=x) correlation for $\bar{\gamma}_{E1E1}$. The green lines show the nominal (generated) values of the other polarisabilities.
 
 \newpage
-\begin{figure}[h!]
-	\ContinuedFloat
-	\centering
-	\subfloat[$\bar{\alpha}_{E1}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$ (produced with HDPV). $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. ] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_alpha.pdf}} \\
-	
-	\subfloat[$\bar{\beta}_{E1}$ (reconstructed with B$\chi$PT) is shown as a function of $\bar{\gamma}_{E1E1}$ (produced with HDPV). $\bar{\gamma}_{M1M1}$, $\bar{\gamma}_{E1M2}$, $\bar{\gamma}_{M1E2}$ are fixed to nominal HDPV: 2.9, -0.02, and 2.2 respectively. ] {\includegraphics[width=0.85\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_beta.pdf}} \\
-\end{figure}
-
-\newpage
-\subsection{What about at lower energies?}
+\subsection{What about at lower energies? MUCH BETTER}
 
 The test is repeated with pseudo data at low energies:
 \begin{itemize}
 	\item 6 $\Sigma_{3}$ points at (E,$\theta$) = (110 MeV, 70$^\circ$/80$^\circ$/90$^\circ$) and (130 MeV, 70$^\circ$/80$^\circ$/90$^\circ$)
 	\item 3 $\Sigma_{2x}$ points at (E,$\theta$) = (110 MeV, 70$^\circ$/80$^\circ$/90$^\circ$)
 \end{itemize}
-\vspace{-5mm}
+\vspace{-10mm}
 
 \begin{figure}[h!]
 	\centering
@@ -459,6 +481,30 @@ The test is repeated with pseudo data at low energies:
 	\subfloat[$\bar{\gamma}_{E1M2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1M2_lowE.pdf}}
 	\subfloat[$\bar{\gamma}_{M1E2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1E2_lowE.pdf}}\\		
 \end{figure}
+
+\noindent \textbf{Fig 6.2.2:} Repeated test for low energy pseudo data. \textbf{Model dependance is gone!}
+
+\newpage 
+\subsection{What if we introduce smearing - how do errors change?}
+
+Pseudo data was produced, and fit, using B$\chi$PT:
+\begin{itemize}
+	\item 6 $\Sigma_{3}$ points at (E,$\theta$) = (275 MeV, 70$^\circ$/80$^\circ$/90$^\circ$) and (295 MeV, 70$^\circ$/80$^\circ$/90$^\circ$)
+	\item 3 $\Sigma_{2x}$ points at (E,$\theta$) = (295 MeV, 70$^\circ$/80$^\circ$/90$^\circ$)
+	\item Data points Gaussian smeared ($\sigma$ defined by the percent error)
+\end{itemize}
+
+\vspace{-10mm}
+\begin{figure}[h!]
+	\centering
+	\subfloat[$\bar{\alpha}_{E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_alpha_error.pdf}}
+	\subfloat[$\bar{\beta}_{M1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_beta_error.pdf}}\\
+	\subfloat[$\bar{\gamma}_{E1E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1E1_error.pdf}}
+	\subfloat[$\bar{\gamma}_{M1M11}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1M1_error.pdf}}\\	
+	\subfloat[$\bar{\gamma}_{E1M2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_E1M2_error.pdf}}
+	\subfloat[$\bar{\gamma}_{M1E2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/Pseudo_M1E2_error.pdf}}\\		
+\end{figure}
+
 
 \newpage
 \section{Fitting real data with CS-APLCON\texttt{++}}
@@ -515,9 +561,8 @@ for the HDPV fitting theory and,
 \begin{equation}
 \bar{\gamma}_{E1E1} \approx -3.7 \pm 1.3 \hspace{2mm} \text{(fit)}, \hspace{5mm} \bar{\gamma}_{E1E1} = -3.3 \text{ (nominal) }
 \end{equation}
-for fitting with B$\chi$PT. While the spread in values for each fitting theory (HDPV or B$\chi$PT) is small, the separation between the two methods is relatively large (on the order of 1$\times$10$^{-4}$ fm$^{4}$). This same separation exists between the nominal values of $\bar{\gamma}_{E1E1}$. This could suggest a possible scale for the model dependance associated with the fitting method. 
+for fitting with B$\chi$PT. While the spread in values for each fitting theory (HDPV or B$\chi$PT) is small, the separation between the two methods is relatively large (on the order of 1$\times$10$^{-4}$ fm$^{4}$). This same separation exists between the nominal values of $\bar{\gamma}_{E1E1}$. Furthermore, recalling the pseudo studies shown in Section \ref{Sec:pseu_highE}, a comparable spread is seen in pseudo data. 
 
-\newpage
 
 \subsection{Test 2: Spin Pols with Collicott $\Sigma_{3}$ and Martel $\Sigma_{2x}$}\label{Section:CollicottTest}
 
@@ -533,10 +578,9 @@ A fit was performed using $\Sigma_{2x}$ results from Martel and $\Sigma_{3}$ res
 		$\bar{\gamma}_{M1M1}$ & 2.9 & 3.0   & 3.13 $\pm$ 0.88 &  2.76 $\pm$ 0.52 & 3.07 $\pm$ 0.50\\
 		$\bar{\gamma}_{E1M2}$ & -0.02 & 0.2 & 1.7 $\pm$ 1.7   &  0.20 $\pm$ 1.17 & 1.76 $\pm$ 1.32\\
 		$\bar{\gamma}_{M1E2}$ & 2.2 & 1.1   & 1.26 $\pm$ 0.43 &  2.03 $\pm$ 0.56 & 1.32 $\pm$ 0.52\\[0.5ex]
-				$\chi^{2}$    &     &       &  ?              & 19.405 & 17.566 \\		
+				$\chi^{2}$    &     &       &  ?              & 19.405 & 17.566 \\[0.5ex]		
 		\hline
 		Fitting Theory & HDPV & B$\chi$PT & HDPV & B$\chi$PT& HDPV\\
-		%		Fitting Method &      &           & Rory & CS-APLCON\texttt{++} \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -551,38 +595,19 @@ A fit was performed using $\Sigma_{2x}$ results from Martel and $\Sigma_{3}$ res
 		\hline
 		                    & Nominal & Nominal & Previous Fit & New fit & New fit\\
 		\hline %inserts double horizontal lines
-		$\bar{\gamma}_{E1E1}$ & -4.3 & -3.3 & -3.5 $\pm$ 1.2 & -0.38 $\pm$ 0.78 & 1.09 $\pm$ 0.70 \\ 
-		$\bar{\gamma}_{M1M1}$ & 2.9 & 3.0 & 3.16 $\pm$ 0.85 & 2.40 $\pm$ 0.55 & 1.09 $\pm$ 0.70\\
-		$\bar{\gamma}_{E1M2}$ & -0.02 & 0.2 & -0.7 $\pm$ 1.2 & -2.45 $\pm$ 0.94 & 1.09 $\pm$ 0.70\\
-		$\bar{\gamma}_{M1E2}$ & 2.2 & 1.1 & 1.99 $\pm$ 0.29 & 1.45 $\pm$ 0.53 & 1.09 $\pm$ 0.70\\[0.5ex]
+		$\bar{\gamma}_{E1E1}$ & -4.3 & -3.3 & -3.5 $\pm$ 1.2 & -0.38 $\pm$ 0.78 & -1.46 $\pm$ 0.87 \\ 
+		$\bar{\gamma}_{M1M1}$ & 2.9 & 3.0 & 3.16 $\pm$ 0.85 & 2.40 $\pm$ 0.55 & 2.82 $\pm$ 0.59 \\
+		$\bar{\gamma}_{E1M2}$ & -0.02 & 0.2 & -0.7 $\pm$ 1.2 & -2.45 $\pm$ 0.94 & -1.6 $\pm$ 1.02 \\
+		$\bar{\gamma}_{M1E2}$ & 2.2 & 1.1 & 1.99 $\pm$ 0.29 & 1.45 $\pm$ 0.53 & 1.27 $\pm$ 0.52 \\[0.5ex]
+		$\chi^{2}$    &     &       &  ?              & 115.44 & 111.41 \\[0.5ex]	
 		\hline
 		Fitting Theory & HDPV & B$\chi$PT & HDPV & B$\chi$PT& HDPV\\
-%		Fitting Method &      &           & Rory & CS-APLCON\texttt{++} \\
 		\hline
 	\end{tabular}
 \end{table}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \newpage 
-\subsection{A note on convergence tests of CS-APLCON\texttt{++}}\label{Section:Convergence}
+\section{A note on convergence tests of CS-APLCON\texttt{++}}\label{Section:Convergence}
 
 Fitting within APLCON\texttt{++} is an iterative process. Each iteration is tested against \enquote{convergence criteria}. The default convergence criteria of APLCON\texttt{++} are very strict, requiring a $\partial\chi^{2}$ of 10$^{-5}$. Although it is possible to achieve this level of $\partial\chi^{2}$ for some applications, this is very difficult considering we are attempting to solve a non-linear multi-dimensional problem. To be sure that the convergence criteria can be reduced, two fits were done with different convergence tests. \\
 
@@ -590,17 +615,17 @@ Fitting within APLCON\texttt{++} is an iterative process. Each iteration is test
  
 \begin{table}[h!]
 	\centering % used for centering table
-	\begin{tabular}{|c|c|c|c|} % centered columns (4 columns)
+	\begin{tabular}{|c|c|c|c|c|} % centered columns (4 columns)
 		\hline
-		Convergence Criteria, $\partial\chi^{2}$ & 1.0 $\times$ 10$^{-4}$ & 0.5$\times$10$^{-3}$ & 1.0$\times$10$^{-2}$\\
+		Convergence: $\partial\chi^{2}$ & 1.0 $\times$ 10$^{-4}$ & 0.5$\times$10$^{-3}$ & 1.0$\times$10$^{-2}$ & 1.0$\times$10$^{-0}$\\
 		\hline %inserts double horizontal lines
-		$\bar{\gamma}_{E1E1}$ & -0.37 $\pm$ 0.78 & -0.40 $\pm$ 0.77 & -0.38 $\pm$ 0.78 \\ 
-		$\bar{\gamma}_{M1M1}$ & 2.39 $\pm$ 0.55 & 2.38 $\pm$ 0.55 & 2.40 $\pm$ 0.55 \\
-		$\bar{\gamma}_{E1M2}$ & -2.45 $\pm$ 0.94 & -2.41 $\pm$ 0.94 & -2.45 $\pm$ 0.94 \\
-		$\bar{\gamma}_{M1E2}$ & 1.44 $\pm$ 0.54 & 1.46 $\pm$ 0.54 & 1.45 $\pm$ 0.53 \\[0.5ex]
-		$\chi^{2}$ & 115.441 & 115.443 & 115.441 \\
+		$\bar{\gamma}_{E1E1}$ & -0.37 $\pm$ 0.78 & -0.40 $\pm$ 0.77 & -0.38 $\pm$ 0.78 & -0.36 $\pm$ 0.78\\ 
+		$\bar{\gamma}_{M1M1}$ & 2.39 $\pm$ 0.55 & 2.38 $\pm$ 0.55 & 2.40 $\pm$ 0.55 & 2.42 $\pm$ 0.55\\
+		$\bar{\gamma}_{E1M2}$ & -2.45 $\pm$ 0.94 & -2.41 $\pm$ 0.94 & -2.45 $\pm$ 0.94 & -2.50 $\pm$ 0.94 \\
+		$\bar{\gamma}_{M1E2}$ & 1.44 $\pm$ 0.54 & 1.46 $\pm$ 0.54 & 1.45 $\pm$ 0.53 & 1.45 $\pm$ 0.54\\[0.5ex]
+		$\chi^{2}$ & 115.441 & 115.443 & 115.441 & 115.444\\
 		\hline
-		Fitting Theory & B$\chi$PT & B$\chi$PT & B$\chi$PT \\
+		Fitting Theory & B$\chi$PT & B$\chi$PT & B$\chi$PT & B$\chi$PT \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -609,21 +634,108 @@ Fitting within APLCON\texttt{++} is an iterative process. Each iteration is test
 
 \begin{table}[h!]
 	\centering % used for centering table
-	\begin{tabular}{|c|c|c|c|} % centered columns (4 columns)
+	\begin{tabular}{|c|c|c|c|c|} % centered columns (4 columns)
 		\hline
-		Convergence Criteria, $\partial\chi^{2}$ & 1.0 $\times$ 10$^{-4}$ & 0.5$\times$10$^{-3}$ & 1.0$\times$10$^{-2}$\\
+		Convergence: $\partial\chi^{2}$ & 1.0 $\times$ 10$^{-4}$ & 0.5$\times$10$^{-3}$ & 1.0$\times$10$^{-2}$ & 1.0$\times$10$^{-0}$\\
 		\hline %inserts double horizontal lines
-		$\bar{\gamma}_{E1E1}$ & -3.97 $\pm$ 0.96 & -3.99 $\pm$ 0.96 & -3.98 $\pm$ 0.95 \\ 
-		$\bar{\gamma}_{M1M1}$ & 2.76 $\pm$ 0.52 & 2.76 $\pm$ 0.52 & 2.77 $\pm$ 0.52 \\
-		$\bar{\gamma}_{E1M2}$ & 0.21 $\pm$ 1.18 & 0.21 $\pm$ 1.17 & 0.20 $\pm$ 1.17 \\
-		$\bar{\gamma}_{M1E2}$ & 2.02 $\pm$ 0.56 & 2.03 $\pm$ 0.56 & 2.03 $\pm$ 0.56 \\[0.5ex]
-		$\chi^{2}$ & 19.405 & 19.405 & 19.405 \\
+		$\bar{\gamma}_{E1E1}$ & -3.97 $\pm$ 0.96 & -3.99 $\pm$ 0.96 & -3.98 $\pm$ 0.95 & -3.98 $\pm$ 0.96\\ 
+		$\bar{\gamma}_{M1M1}$ & 2.76 $\pm$ 0.52 & 2.76 $\pm$ 0.52 & 2.77 $\pm$ 0.52 & 2.76 $\pm$ 0.53  \\
+		$\bar{\gamma}_{E1M2}$ & 0.21 $\pm$ 1.18 & 0.21 $\pm$ 1.17 & 0.20 $\pm$ 1.17 & 0.21 $\pm$ 1.18\\
+		$\bar{\gamma}_{M1E2}$ & 2.02 $\pm$ 0.56 & 2.03 $\pm$ 0.56 & 2.03 $\pm$ 0.56 & 2.03 $\pm$ 0.56 \\[0.5ex]
+		$\chi^{2}$ & 19.405 & 19.405 & 19.405 & 19.406\\
 		\hline
-		Fitting Theory & B$\chi$PT & B$\chi$PT & B$\chi$PT \\
+		Fitting Theory & B$\chi$PT & B$\chi$PT & B$\chi$PT & \\
 		\hline
 	\end{tabular}
 \end{table}
 
-\noindent Using less restrictive convergence criteria results in a very small shift in the final spin polarisabilities (on the order of $\approx$ 0.01). The time to perform a fit, however, increases dramatically for more restrictive criteria. For the sake of this report, a convergence criteria of $\partial\chi^{2}$ of 1$\times$10$^{-2}$ was applied.
+\noindent and appear below for pseudo data with nominal B$\chi$PT values:
 
+\begin{table}[h!]
+	\centering % used for centering table
+	\begin{tabular}{|c|c|c|c|c|} % centered columns (4 columns)
+		\hline
+		Convergence: $\partial\chi^{2}$ & 1.0 $\times$ 10$^{-4}$ & 0.5$\times$10$^{-3}$ & 1.0$\times$10$^{-2}$  &  1.0$\times$10$^{0}$ \\
+		\hline %inserts double horizontal lines
+		$\bar{\gamma}_{E1E1}$ (-3.3) & -3.37 $\pm$ 0.07 & -3.37 $\pm$ 0.07 & -3.37 $\pm$ 0.07 & -3.37 $\pm$ 0.07 \\ 
+		$\bar{\gamma}_{M1M1}$ (3.0) & 3.07 $\pm$ 0.09 & 3.07 $\pm$ 0.10 & 3.07 $\pm$ 0.10 & 3.07 $\pm$ 0.09 \\
+		$\bar{\gamma}_{E1M2}$ (0.2) & 0.13 $\pm$ 0.13 & 0.13 $\pm$ 0.13 & 0.13 $\pm$ 0.13 & 0.12 $\pm$ 0.13\\
+		$\bar{\gamma}_{M1E2}$ (1.1) & 1.18 $\pm$ 0.11 & 1.18 $\pm$ 0.11 & 1.18 $\pm$ 0.11  & 1.18 $\pm$ 0.10\\
+		\hline
+		Fitting Theory & B$\chi$PT & B$\chi$PT & B$\chi$PT & B$\chi$PT\\
+		\hline
+	\end{tabular}
+\end{table}
+
+\noindent Using less restrictive convergence criteria results in a very small shift in the final spin polarisabilities (on the order of $\approx$ 0.01). The time to perform a fit, however, increases dramatically for more restrictive criteria. For the sake of this report, a convergence criteria of $\partial\chi^{2}$ of 1$\times$10$^{-2}$ was typically applied. In the case of fitting with HDPV, which takes a long time, a criteria of $\partial\chi^{2}$ of 1$\times$10$^{0}$ was often applied.
+
+\section{A note on the starting parameters}
+
+A common problem for fitting is the sensitivity to starting parameters, where the fitter can easily \enquote{get stuck} in a local minimum, rather than the global minimum. A good test of this, is to choose a wide variety of starting parameters and compare the final fit results. 
+
+\noindent\\ To test the sensitivity to starting parameters, 500 fits were performed using B$\chi$PT. The starting values are sampled uniformly (and independently) over the range:
+\begin{itemize}
+	\item $\bar{\alpha}_{E1}$ \hspace{4.5mm}= [9.2, 13.2] \hspace{3.75mm} $\cdots$ this corresponds to 11.2 $\pm$ 2.0
+	\item $\bar{\beta}_{M1}$ \hspace{4mm}= [0.5, 4.5] \hspace{5mm} $\cdots$ this corresponds to 2.5 $\pm$ 2.0
+	\item $\bar{\gamma}_{E1E1}$ \hspace{1.5mm}= [-6.0, 6.0]
+	\item $\bar{\gamma}_{M1M1}$ = [-6.0, 6.0]
+	\item $\bar{\gamma}_{E1M2}$ \hspace{1mm}= [-6.0, 6.0]
+	\item $\bar{\gamma}_{M1E2}$ \hspace{1mm}= [-6.0, 6.0]
+\end{itemize}
+
+\noindent\\ The resulting starting parameters for the polarisabilities are shown below:
+
+\begin{figure}[h!]
+	\centering
+	\subfloat[Starting values of $\bar{\alpha}_{E1}$ and $\bar{\beta}_{M1}$] {\includegraphics[width=\linewidth]{/home/cristina/ComptonFitter/results/Start_alpha_beta.pdf}}		
+\end{figure}
+
+\newpage
+\begin{figure}[h!]
+	\centering
+%	\ContinuedFloat // Comment me back in CC
+	\subfloat[Starting values of $\bar{\gamma}_{E1E1}$ and $\bar{\gamma}_{M1M1}$] {\includegraphics[width=\linewidth]{/home/cristina/ComptonFitter/results/Start_E1E1_M1M1.pdf}} \\	
+	\subfloat[Starting values of $\bar{\gamma}_{E1M2}$ and $\bar{\gamma}_{M1E2}$] {\includegraphics[width=\linewidth]{/home/cristina/ComptonFitter/results/Start_E1M2_M1E2.pdf}} \\		
+\end{figure}
+
+
+\clearpage
+\noindent The resulting fit parameters are shown below for the 500 fits performed. As expected, each polarisability shows a roughly Gaussian distribution (with a small $\sigma$). As an example, a gaus fit to the $\bar{\gamma}_{E1E1}$ distribution has a mean value of -0.37 with a $\sigma$ of 0.037. 
+
+\begin{figure}[h!]
+	\centering
+	\subfloat[Reconstructed $\bar{\alpha}_{E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_alpha.pdf}}
+	\subfloat[Reconstructed $\bar{\beta}_{M1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_beta.pdf}}\\
+	\subfloat[Reconstructed $\bar{\gamma}_{E1E1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_E1E1.pdf}}
+	\subfloat[Reconstructed $\bar{\gamma}_{M1M1}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_M1M1.pdf}}\\	
+	\subfloat[Reconstructed $\bar{\gamma}_{E1M2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_E1M2.pdf}}
+	\subfloat[Reconstructed $\bar{\gamma}_{M1E2}$] {\includegraphics[width=0.5\linewidth]{/home/cristina/ComptonFitter/results/End_M1E2.pdf}}\\		
+\end{figure}
+
+\newpage
+\section{Conclusions}
+
+\textbf{The Good}
+
+\begin{itemize}
+	\item CS-APLCON\texttt{++} provides a new fitting method, using Least squares minimization
+	\item Pseudo data generated with one theory code is properly reconstructed with the same code. In other words, the fitting algorithm is capable of reconstructing a known set of polarisabilities (confirmation of CS-APLCON\texttt{++}). (Section 6.1).
+	\item Pseudo data provides some understanding of the connection between statistical errors on data and resulting errors on polarisabilities (Section 6.4).
+	\item A test of 500 fits, each with randomized starting parameters, shows that the fitting method is relatively insensitive to the starting parameter (at least for fitting with B$\chi$PT), (Section 9). 
+	\item Fitting MAMI data (Collicott and Martel) seems to produce results consistent with previous fits. However the errors determined from the fit are improved by roughly 30$\%$. (Section 7.2).
+\end{itemize}
+
+\noindent \\\textbf{The Bad}
+
+\begin{itemize}
+	\item Pseudo data generated with one theory code is not properly reconstructed with the other code. This suggests model dependence. (Section 6.1).
+	\item A more detailed study of the connection between the two theory codes (using pseudo data) shows that there is significant \enquote{cross-talk} between the polarisabilities. Varying only $\bar{\gamma}_{E1E1}$ in HDPV resulting in changes to the reconstructed polarisabilities for \textbf{all other polarisabilities} when reconstructed with B$\chi$PT. Surprisingly, varying $\bar{\gamma}_{E1E1}$ even shows an effect in the scalar polarisabilities. (Section 6.2).
+	\item This effect is not seen in the low energy regime (below $\pi^{0}$ threshold). This is listed under \enquote{the bad} because it helps to confirm this is more likely a true model dependence which is present at high-energies, rather than a by-product of a faulty fitting method or test. (Section 6.3).
+	\item Fitting LEGS and MAMI data (Collicott and Martel) seems to produce results wildly inconsistent with previous fits. (Section 7.3).
+\end{itemize}
+
+
+\noindent \\ \textbf{Let's discuss!}
 \end{document}
+
+
