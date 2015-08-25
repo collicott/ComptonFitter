@@ -67,7 +67,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-    if (argc != 8)
+    if (argc >= 9)
     {
         cout << argc << endl;
         cout << "oh shit" << endl;
@@ -80,47 +80,48 @@ int main(int argc, char *argv[])
                                        << argv[4] << " "
                                        << argv[5] << " "
                                        << argv[6] << " "
-                                       << argv[7] << endl;
+                                       << argv[7] << " "
+                                       << "with error of " << argv[8] << "percent" << endl;
+
     params fitparam(atof(argv[2]), atof(argv[3]), atof(argv[4]), atof(argv[5]), atof(argv[6]), atof(argv[7]));
+    double error = atof(argv[8]);
 
     PseudoData pseudo;
-//    params fitparam(11.2, 2.5, -3.3, 3.0, 0.2, 1.1);
-//    params fitparam(11.2, 2.5, -1.0, 1.0, -2.5, 3.5);
     vector<set_params> set;
 
+/*
     set.push_back ({6,270.0,290.0,60,150,"Sigma_3"});
     set.push_back ({6,290.0,305.0,60,150,"Sigma_3"});
     set.push_back ({4,280.0,300.0,60,150,"Sigma_2x"});
+*/
+    set.push_back ({1, 275, 275, 70, 70, "Sigma_3"});
+    set.push_back ({1, 275, 275, 80, 80, "Sigma_3"});
+    set.push_back ({1, 275, 275, 90, 90, "Sigma_3"});
+
+    set.push_back ({1, 295, 295, 70, 70, "Sigma_3"});
+    set.push_back ({1, 295, 295, 80, 80, "Sigma_3"});
+    set.push_back ({1, 295, 295, 90, 90, "Sigma_3"});
+
+    set.push_back ({1, 295, 295, 70, 70, "Sigma_2x"});
+    set.push_back ({1, 295, 295, 80, 80, "Sigma_2x"});
+    set.push_back ({1, 295, 295, 90, 90, "Sigma_2x"});
+
+    bool smear = false;
 
     vector<data> pseudo_data;
+    for (auto i = 0; i < set.size(); i++)
+    {
+        vector<data> p = pseudo.DataSet(set[i]);
+        pseudo_data.insert(pseudo_data.end(), p.begin(), p.end());
+    }
 
-//    for (auto i = 0; i < set.size(); i++)
-//    {
-//        vector<data> p = pseudo.DataSet(set[i]);
-//        pseudo_data.insert(pseudo_data.end(), p.begin(), p.end());
-//    }
-
-    pseudo_data.push_back ({70, 275, 0, 0, "Sigma_3"});
-    pseudo_data.push_back ({80, 275, 0, 0, "Sigma_3"});
-    pseudo_data.push_back ({90, 275, 0, 0, "Sigma_3"});
-
-    pseudo_data.push_back ({70, 295, 0, 0, "Sigma_3"});
-    pseudo_data.push_back ({80, 295, 0, 0, "Sigma_3"});
-    pseudo_data.push_back ({90, 295, 0, 0, "Sigma_3"});
-
-    pseudo_data.push_back ({70, 295, 0, 0, "Sigma_2x"});
-    pseudo_data.push_back ({80, 295, 0, 0, "Sigma_2x"});
-    pseudo_data.push_back ({90, 295, 0, 0, "Sigma_2x"});
-
-
-    //pseudo.Generate(pseudo_data, fitparam, true, 20.0, theory_code);
     if(theory_code == "all")
     {
-        pseudo.Generate(pseudo_data, fitparam, false, 1.0, "Pascalutsa");
-        pseudo.Generate(pseudo_data, fitparam, false, 1.0, "Pasquini");
+        pseudo.Generate(pseudo_data, fitparam, smear, error, "Pascalutsa");
+        pseudo.Generate(pseudo_data, fitparam, smear, error, "Pasquini");
 
     }
-    else pseudo.Generate(pseudo_data, fitparam, false, 1.0, theory_code);
+    else pseudo.Generate(pseudo_data, fitparam, smear, error, theory_code);
 
     return 0;
 
